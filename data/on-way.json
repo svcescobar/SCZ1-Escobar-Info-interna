@@ -1,0 +1,72 @@
+[
+  {
+    "SVC": "SCZ1",
+    "HUB": "ARBA01",
+    "ID": "47370738910",
+    "STATUS": "stale",
+    "DESTINO": "SCZ1",
+    "LAST STATUS": "1 jul 2026",
+    "DESCRIPCION": "Llave Pico De Loro",
+    "USD": "USD314,60",
+    "OBSERVACION": "CANCELADO EN CAMINO",
+    "LOSTEAR": "FALSE",
+    "RESUELTO": "FALSE",
+    "FECHA DE LOSTEO": ""
+  },
+  {
+    "SVC": "SCZ1",
+    "HUB": "ARXCF1",
+    "ID": "47383262568",
+    "STATUS": "stale",
+    "DESTINO": "SCZ1",
+    "LAST STATUS": "4 jul 2026",
+    "DESCRIPCION": "Taladro Base Magnetica Konan 1400w 28mm Perforacion Amarillo",
+    "USD": "USD576,08",
+    "OBSERVACION": "ESTANCADO EN LA ESTACION",
+    "LOSTEAR": "FALSE",
+    "RESUELTO": "FALSE",
+    "FECHA DE LOSTEO": ""
+  },
+  {
+    "SVC": "SCZ1",
+    "HUB": "ARXCF1",
+    "ID": "47403370867",
+    "STATUS": "stale",
+    "DESTINO": "SCZ1",
+    "LAST STATUS": "8 jul 2026",
+    "DESCRIPCION": "Samsung A56 5g 5g Dual Sim 256 Gb Gris 1",
+    "USD": "USD638,00",
+    "OBSERVACION": "CANCELADO EN CAMINO",
+    "LOSTEAR": "FALSE",
+    "RESUELTO": "FALSE",
+    "FECHA DE LOSTEO": ""
+  },
+  {
+    "SVC": "SCZ1",
+    "HUB": "ARXCF1",
+    "ID": "47505932082",
+    "STATUS": "stale",
+    "DESTINO": "SCZ1",
+    "LAST STATUS": "21 jul 2026",
+    "DESCRIPCION": "Campera Nike Windrunner Para Hombre Negro",
+    "USD": "USD367,00",
+    "OBSERVACION": "ESTANCADO EN LA ESTACION",
+    "LOSTEAR": "FALSE",
+    "RESUELTO": "FALSE",
+    "FECHA DE LOSTEO": ""
+  },
+  {
+    "SVC": "SCZ1",
+    "HUB": "ARBA02",
+    "ID": "47502398677",
+    "STATUS": "stale",
+    "DESTINO": "SCZ1",
+    "LAST STATUS": "24 jul 2026",
+    "DESCRIPCION": "Gorra adidas Beisbol Bordado Lineal Kd2109 M/l, Medias adidas",
+    "USD": "USD295,00",
+    "OBSERVACION": "ESTANCADO EN LA ESTACION",
+    "LOSTEAR": "FALSE",
+    "RESUELTO": "FALSE",
+    "FECHA DE LOSTEO": ""
+  }
+]
