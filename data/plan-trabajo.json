@@ -1,0 +1,354 @@
+[
+  {
+    "Tarea": "Gross",
+    "Notas": "Revisar gross diario de la estacion",
+    "Regularidad": "Diario",
+    "Referente": "SEBA",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Ausentismo",
+    "Notas": "Control de ausentismo del personal",
+    "Regularidad": "Diario",
+    "Referente": "SANTI",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Donaciones",
+    "Notas": "Gestion de donaciones",
+    "Regularidad": "Semanal",
+    "Referente": "DIEGO",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Reflujo",
+    "Notas": "Analisis de reflujo",
+    "Regularidad": "Diario",
+    "Referente": "SEBA",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Mal etiquetados",
+    "Notas": "Seguimiento de paquetes mal etiquetados",
+    "Regularidad": "Diario",
+    "Referente": "DIEGO",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "On way",
+    "Notas": "Seguimiento de paquetes on way",
+    "Regularidad": "Diario",
+    "Referente": "SEBA",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Estacion errada",
+    "Notas": "Seguimiento de paquetes en estacion errada",
+    "Regularidad": "Diario",
+    "Referente": "SEBA",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Solucion de problemas",
+    "Notas": "Seguimiento de problem solving",
+    "Regularidad": "Diario",
+    "Referente": "SANTI",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Auditorias",
+    "Notas": "Auditorias mensuales operativas",
+    "Regularidad": "Mensual",
+    "Referente": "SEBA",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Inventario",
+    "Notas": "Inventario del SVC",
+    "Regularidad": "Mensual",
+    "Referente": "SANTI",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Capacitaciones",
+    "Notas": "Capacitaciones del personal",
+    "Regularidad": "Mensual",
+    "Referente": "DIEGO",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Avisos de riesgo",
+    "Notas": "Registro de avisos de riesgo",
+    "Regularidad": "Mensual",
+    "Referente": "SEBA",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Control de dotacion",
+    "Notas": "Control de dotacion segun volumen",
+    "Regularidad": "Diario",
+    "Referente": "SANTI",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Despacho",
+    "Notas": "Control de despacho",
+    "Regularidad": "Diario",
+    "Referente": "DIEGO",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Recepcion",
+    "Notas": "Control de recepcion",
+    "Regularidad": "Diario",
+    "Referente": "SEBA",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Pesca",
+    "Notas": "Control de pesca",
+    "Regularidad": "Diario",
+    "Referente": "SANTI",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Contenerizacion",
+    "Notas": "Control de contenerizacion",
+    "Regularidad": "Diario",
+    "Referente": "SANTI",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Line Haul",
+    "Notas": "Seguimiento de line haul",
+    "Regularidad": "Diario",
+    "Referente": "SEBA",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Tablero de flujo",
+    "Notas": "Actualizar tablero de flujo",
+    "Regularidad": "Diario",
+    "Referente": "SEBA",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Gestion SHE",
+    "Notas": "Gestion de seguridad e higiene",
+    "Regularidad": "Semanal",
+    "Referente": "DIEGO",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Gestion de TL",
+    "Notas": "Gestion de team leaders",
+    "Regularidad": "Semanal",
+    "Referente": "SEBA",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Induccion",
+    "Notas": "Induccion de nuevo personal",
+    "Regularidad": "Segun ingreso",
+    "Referente": "SANTI",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Etiquetado",
+    "Notas": "Control de etiquetado",
+    "Regularidad": "Diario",
+    "Referente": "SANTI",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Trainings",
+    "Notas": "Actualizar file de trainings",
+    "Regularidad": "Mensual",
+    "Referente": "SEBA",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Tier 1",
+    "Notas": "Actualizar tier 1",
+    "Regularidad": "Mensual",
+    "Referente": "SEBA",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Calculadora dotacion",
+    "Notas": "Mantener calculadora de dotacion",
+    "Regularidad": "Mensual",
+    "Referente": "SANTI",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Nombres de salas",
+    "Notas": "Definir nombres de salas",
+    "Regularidad": "Unico",
+    "Referente": "SEBA",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "File carga y descarga",
+    "Notas": "Actualizar file de carga y descarga",
+    "Regularidad": "Mensual",
+    "Referente": "SEBA",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Estancados en camino",
+    "Notas": "Seguimiento de estancados en camino",
+    "Regularidad": "Diario",
+    "Referente": "SEBA",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Analisis reflujo/mal etiquetados",
+    "Notas": "Analisis de reflujo y mal etiquetados",
+    "Regularidad": "Semanal",
+    "Referente": "DIEGO",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Reporte diario",
+    "Notas": "Envio de reporte diario",
+    "Regularidad": "Diario",
+    "Referente": "SEBA",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Reporte semanal",
+    "Notas": "Envio de reporte semanal",
+    "Regularidad": "Semanal",
+    "Referente": "SEBA",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Reporte mensual",
+    "Notas": "Envio de reporte mensual",
+    "Regularidad": "Mensual",
+    "Referente": "SEBA",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Control de horas",
+    "Notas": "Control de horas del personal",
+    "Regularidad": "Diario",
+    "Referente": "SANTI",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Turnos",
+    "Notas": "Armado de turnos",
+    "Regularidad": "Semanal",
+    "Referente": "SANTI",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Mantenimiento",
+    "Notas": "Control de mantenimiento",
+    "Regularidad": "Semanal",
+    "Referente": "DIEGO",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Insumos",
+    "Notas": "Control de insumos",
+    "Regularidad": "Semanal",
+    "Referente": "DIEGO",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Limpieza",
+    "Notas": "Control de limpieza",
+    "Regularidad": "Diario",
+    "Referente": "DIEGO",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "5S",
+    "Notas": "Control de 5S",
+    "Regularidad": "Semanal",
+    "Referente": "SEBA",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Indicadores",
+    "Notas": "Actualizar indicadores",
+    "Regularidad": "Diario",
+    "Referente": "SEBA",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Reuniones",
+    "Notas": "Reuniones operativas",
+    "Regularidad": "Diario",
+    "Referente": "SEBA",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Feedback",
+    "Notas": "Feedback al personal",
+    "Regularidad": "Semanal",
+    "Referente": "SEBA",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Control de calidad",
+    "Notas": "Control de calidad de procesos",
+    "Regularidad": "Diario",
+    "Referente": "SANTI",
+    "Link Meli": "",
+    "Link 3PL": ""
+  },
+  {
+    "Tarea": "Control carga de masterfile",
+    "Notas": "Control de carga del masterfile",
+    "Regularidad": "Diario",
+    "Referente": "SEBA",
+    "Link Meli": "",
+    "Link 3PL": ""
+  }
+]
