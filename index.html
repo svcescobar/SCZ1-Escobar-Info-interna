@@ -112,7 +112,7 @@ function renderAvisos(personas){
   const s=avisosState();
   let h='<div class="avisos-grid">';
   for(const p of personas){
-    h+='<div class="persona-card"><h3>'+esc(p.persona)+'</h3><div class="card"><table><thead><tr><th>Mes</th>'+p.categorias.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr></thead><tbody>';
+    h+='<div class="persona-card"><h3>'+esc(p.persona)+'</h3><div class="card"><table><thead><tr><th>Mes</th>'+p.categorias.map((c,ci)=>{const lbl=(ci===p.categorias.length-1&&p.categorias.length>4)?'GEMBA':(ci+1);return '<th>'+lbl+'</th>';}).join('')+'</tr></thead><tbody>';
     for(const m of p.meses){
       h+='<tr><td><b>'+esc(m.mes)+'</b></td>'+m.valores.map((v,ci)=>{
         const key=p.persona+'|'+m.mes+'|'+p.categorias[ci];
