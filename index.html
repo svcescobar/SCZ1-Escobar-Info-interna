@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCZ1 Escobar - Info Interna</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Roboto, Arial, sans-serif; background:#f4f5f7; color:#202124; }
+  header { background:#741b47; color:#fff; padding:18px 24px; }
+  header h1 { font-size:20px; font-weight:600; }
+  header p { font-size:13px; opacity:.85; margin-top:4px; }
+  nav { background:#fff; border-bottom:1px solid #dadce0; display:flex; flex-wrap:wrap; position:sticky; top:0; z-index:10; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  nav button { border:none; background:none; padding:12px 16px; font-size:13px; cursor:pointer; color:#444; border-bottom:3px solid transparent; display:flex; align-items:center; gap:7px; }
+  nav button:hover { background:#f1f3f4; }
+  nav button.active { color:#741b47; border-bottom-color:#741b47; font-weight:600; }
+  nav button .dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+  main { padding:24px; max-width:1400px; margin:0 auto; }
+  section { display:none; }
+  section.active { display:block; }
+  h2 { font-size:18px; margin-bottom:14px; color:#741b47; }
+  .card { background:#fff; border:1px solid #e0e0e0; border-radius:8px; overflow:auto; margin-bottom:20px; }
+  table { border-collapse:collapse; width:100%; font-size:13px; }
+  th { background:#f8f9fa; text-align:left; padding:9px 12px; border-bottom:2px solid #e0e0e0; position:sticky; top:0; white-space:nowrap; }
+  td { padding:8px 12px; border-bottom:1px solid #eee; vertical-align:top; }
+  tr:hover td { background:#fafafa; }
+  a { color:#1a73e8; text-decoration:none; } a:hover { text-decoration:underline; }
+  .badge { padding:2px 9px; border-radius:12px; font-size:11px; font-weight:600; white-space:nowrap; }
+  .b-green { background:#e6f4ea; color:#137333; }
+  .b-yellow { background:#fef7e0; color:#b06000; }
+  .b-grey { background:#f1f3f4; color:#5f6368; }
+  .b-red { background:#fce8e6; color:#c5221f; }
+  .moki { background:#fff; border:1px solid #e0e0e0; border-left:4px solid #741b47; border-radius:8px; padding:16px 18px; margin-bottom:20px; }
+  .moki h3 { font-size:15px; margin-bottom:10px; }
+  .moki .row { font-size:13px; margin:5px 0; }
+  .moki .k { display:inline-block; width:120px; color:#5f6368; font-weight:600; }
+  .note { background:#fef7e0; border:1px solid #f0d78c; border-radius:6px; padding:10px 14px; font-size:12px; color:#7a5b00; margin-top:10px; }
+  .avisos-grid { display:grid; gap:16px; }
+  .persona-card { background:#fff; border:1px solid #e0e0e0; border-radius:8px; padding:14px; }
+  .persona-card h3 { font-size:14px; color:#741b47; margin-bottom:10px; }
+  .chk { display:inline-block; width:16px; height:16px; border-radius:3px; border:1px solid #bbb; text-align:center; line-height:16px; font-size:11px; }
+  .chk.on { background:#137333; color:#fff; border-color:#137333; }
+  footer { padding:20px 24px; font-size:12px; color:#5f6368; border-top:1px solid #dadce0; margin-top:20px; }
+  .empty { padding:20px; color:#888; font-size:13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>SCZ1 Escobar &mdash; Info Interna</h1>
+  <p>Portal operativo interno &middot; Centro de logistica Escobar</p>
+</header>
+<nav id="nav"></nav>
+<main id="main"></main>
+<footer>
+  Portal generado a partir del file interno "SCZ1 Escobar - INFO INTERNA". Los datos son editables desde los archivos JSON en la carpeta <code>/data</code>.
+  Por seguridad, las credenciales de acceso (usuario y contrase&ntilde;a) no se publican en este portal p&uacute;blico y se gestionan de forma interna.
+</footer>
+<script>
+const TABS = [
+  {id:'plan', label:'Plan de Trabajo 2026', color:'#4285f4', file:'data/plan-trabajo.json', type:'plan'},
+  {id:'proyectos', label:'Proyectos SCZ1', color:'#34a853', file:'data/proyectos.json', type:'proyectos'},
+  {id:'mensual', label:'Mensual Operativa', color:'#741b47', file:'data/mensual-operativa.json', type:'mensual'},
+  {id:'solucion', label:'Solucion de problemas', color:'#fbbc04', file:'data/solucion-problemas.json', type:'table'},
+  {id:'onway', label:'On Way', color:'#ff6d01', file:'data/on-way.json', type:'table'},
+  {id:'estacion', label:'Estacion Errada', color:'#ea4335', file:'data/estacion-errada.json', type:'table'},
+  {id:'avisos', label:'Avisos de Riesgo', color:'#9c27b0', file:'data/avisos-riesgo.json', type:'avisos'},
+];
+function badge(v){
+  const s=String(v).toLowerCase().trim();
+  if(s==='completado'||s==='true') return '<span class="badge b-green">'+(s==='true'?'Si':'Completado')+'</span>';
+  if(s==='en proceso'||s==='en-proceso') return '<span class="badge b-yellow">En proceso</span>';
+  if(s==='false') return '<span class="badge b-grey">No</span>';
+  if(s==='stale'||s==='problem_solving') return '<span class="badge b-red">'+v+'</span>';
+  return v;
+}
+function link(u,t){ if(!u) return ''; return '<a href="'+u+'" target="_blank" rel="noopener">'+(t||'Abrir')+'</a>'; }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function isStatus(k){ return /status|resuelto|resuelta/i.test(k); }
+function isLink(v){ return typeof v==='string' && /^https?:\/\//.test(v); }
+function renderTable(rows){
+  if(!rows||!rows.length) return '<div class="empty">Sin registros.</div>';
+  const cols=Object.keys(rows[0]);
+  let h='<div class="card"><table><thead><tr>'+cols.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr></thead><tbody>';
+  for(const r of rows){
+    h+='<tr>'+cols.map(c=>{
+      let v=r[c];
+      if(isLink(v)) return '<td>'+link(v)+'</td>';
+      if(isStatus(c)&&v!=null&&v!=='') return '<td>'+badge(v)+'</td>';
+      return '<td>'+esc(v)+'</td>';
+    }).join('')+'</tr>';
+  }
+  return h+'</tbody></table></div>';
+}
+function renderMensual(d){
+  let h='<div class="moki"><h3>Acceso Moki</h3>';
+  h+='<div class="row"><span class="k">Portal</span>'+link(d.moki.url, d.moki.url)+'</div>';
+  h+='<div class="row"><span class="k">Empresa</span>'+esc(d.moki.empresa)+'</div>';
+  if(d.moki.instructivo) h+='<div class="row"><span class="k">Instructivo</span>'+link(d.moki.instructivo,'Ver instructivo')+'</div>';
+  h+='<div class="note">Usuario y contrase&ntilde;a no se publican en este portal p&uacute;blico por seguridad. Se gestionan de forma interna.</div></div>';
+  h+='<h2 style="margin-top:6px">Auditorias mensuales</h2>';
+  h+=renderTable(d.auditorias);
+  return h;
+}
+function renderAvisos(personas){
+  let h='<div class="avisos-grid">';
+  for(const p of personas){
+    h+='<div class="persona-card"><h3>'+esc(p.persona)+'</h3><div class="card"><table><thead><tr><th>Mes</th>'+p.categorias.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr></thead><tbody>';
+    for(const m of p.meses){
+      h+='<tr><td><b>'+esc(m.mes)+'</b></td>'+m.valores.map(v=>'<td><span class="chk '+(v?'on':'')+'">'+(v?'&#10003;':'')+'</span></td>').join('')+'</tr>';
+    }
+    h+='</tbody></table></div></div>';
+  }
+  return h+'</div>';
+}
+async function load(tab){
+  const main=document.getElementById('main');
+  let sec=document.getElementById('sec-'+tab.id);
+  if(!sec){ sec=document.createElement('section'); sec.id='sec-'+tab.id; main.appendChild(sec); }
+  document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.remove('active'));
+  sec.classList.add('active');
+  document.getElementById('btn-'+tab.id).classList.add('active');
+  if(sec.dataset.loaded) return;
+  sec.innerHTML='<h2>'+esc(tab.label)+'</h2><div class="empty">Cargando...</div>';
+  try{
+    const res=await fetch(tab.file); const data=await res.json();
+    let body='';
+    if(tab.type==='mensual') body=renderMensual(data);
+    else if(tab.type==='avisos') body=renderAvisos(data);
+    else body=renderTable(data);
+    sec.innerHTML='<h2>'+esc(tab.label)+'</h2>'+body;
+    sec.dataset.loaded='1';
+  }catch(e){ sec.innerHTML='<h2>'+esc(tab.label)+'</h2><div class="empty">No se pudo cargar '+tab.file+'</div>'; }
+}
+const nav=document.getElementById('nav');
+TABS.forEach((t,i)=>{
+  const b=document.createElement('button'); b.id='btn-'+t.id;
+  b.innerHTML='<span class="dot" style="background:'+t.color+'"></span>'+t.label;
+  b.onclick=()=>load(t); nav.appendChild(b);
+  if(i===0) setTimeout(()=>load(t),0);
+});
+</script>
+</body>
+</html>
