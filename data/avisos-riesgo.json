@@ -1,0 +1,204 @@
+[
+  {
+    "persona": "SEBA",
+    "categorias": [
+      "Ausentismo",
+      "Bajo rendimiento",
+      "Conducta",
+      "Seguridad",
+      "Calidad"
+    ],
+    "meses": [
+      {
+        "mes": "JULIO",
+        "valores": [
+          true,
+          true,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "mes": "AGOSTO",
+        "valores": [
+          false,
+          false,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "mes": "SEPTIEMBRE",
+        "valores": [
+          false,
+          false,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "mes": "OCTUBRE",
+        "valores": [
+          false,
+          false,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "mes": "NOVIEMBRE",
+        "valores": [
+          false,
+          false,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "mes": "DICIEMBRE",
+        "valores": [
+          false,
+          false,
+          false,
+          false,
+          false
+        ]
+      }
+    ]
+  },
+  {
+    "persona": "SANTI",
+    "categorias": [
+      "Ausentismo",
+      "Bajo rendimiento",
+      "Conducta",
+      "Seguridad"
+    ],
+    "meses": [
+      {
+        "mes": "JULIO",
+        "valores": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "mes": "AGOSTO",
+        "valores": [
+          false,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "mes": "SEPTIEMBRE",
+        "valores": [
+          false,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "mes": "OCTUBRE",
+        "valores": [
+          false,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "mes": "NOVIEMBRE",
+        "valores": [
+          false,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "mes": "DICIEMBRE",
+        "valores": [
+          false,
+          false,
+          false,
+          false
+        ]
+      }
+    ]
+  },
+  {
+    "persona": "DIEGO",
+    "categorias": [
+      "Ausentismo",
+      "Bajo rendimiento",
+      "Conducta",
+      "Seguridad"
+    ],
+    "meses": [
+      {
+        "mes": "JULIO",
+        "valores": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "mes": "AGOSTO",
+        "valores": [
+          false,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "mes": "SEPTIEMBRE",
+        "valores": [
+          false,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "mes": "OCTUBRE",
+        "valores": [
+          false,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "mes": "NOVIEMBRE",
+        "valores": [
+          false,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "mes": "DICIEMBRE",
+        "valores": [
+          false,
+          false,
+          false,
+          false
+        ]
+      }
+    ]
+  }
+]
