@@ -1,0 +1,65 @@
+[
+  {
+    "PROYECTO": "ACTUALIZAR TIER 1",
+    "DETALLE": "Actualizar el tier 1 de la estacion",
+    "LO TOMA": "SEBA",
+    "FIN": "",
+    "STATUS": "COMPLETADO"
+  },
+  {
+    "PROYECTO": "TABLERO DE FLUJO DE LH",
+    "DETALLE": "Armar tablero de seguimiento del flujo de line haul",
+    "LO TOMA": "SEBA",
+    "FIN": "",
+    "STATUS": "EN PROCESO"
+  },
+  {
+    "PROYECTO": "CALCULADORA DOTACION",
+    "DETALLE": "Calculadora de dotacion segun volumen",
+    "LO TOMA": "SANTI",
+    "FIN": "",
+    "STATUS": "EN PROCESO"
+  },
+  {
+    "PROYECTO": "ACTUALIZAR FILE DE TRAININGS",
+    "DETALLE": "Actualizar el file de trainings del personal",
+    "LO TOMA": "SEBA",
+    "FIN": "",
+    "STATUS": "COMPLETADO"
+  },
+  {
+    "PROYECTO": "ANALISIS DE REFLUJO Y MAL ETIQUETADOS",
+    "DETALLE": "Analisis de reflujo y paquetes mal etiquetados",
+    "LO TOMA": "DIEGO",
+    "FIN": "",
+    "STATUS": "EN PROCESO"
+  },
+  {
+    "PROYECTO": "ESTANCADOS EN CAMINO",
+    "DETALLE": "Seguimiento de paquetes estancados en camino",
+    "LO TOMA": "SEBA",
+    "FIN": "",
+    "STATUS": "COMPLETADO"
+  },
+  {
+    "PROYECTO": "INVENTARIO SVC",
+    "DETALLE": "Inventario del SVC",
+    "LO TOMA": "SANTI",
+    "FIN": "",
+    "STATUS": "EN PROCESO"
+  },
+  {
+    "PROYECTO": "ELEGIR NOMBRE A LAS SALAS",
+    "DETALLE": "Elegir nombre a las salas del centro",
+    "LO TOMA": "SEBA",
+    "FIN": "",
+    "STATUS": "EN PROCESO"
+  },
+  {
+    "PROYECTO": "CAMBIAR FILE DE CARGA Y DESCARGA",
+    "DETALLE": "Cambiar el file de carga y descarga",
+    "LO TOMA": "SEBA",
+    "FIN": "",
+    "STATUS": "COMPLETADO"
+  }
+]
