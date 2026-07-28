@@ -38,7 +38,7 @@
   .avisos-grid { display:grid; gap:16px; }
   .persona-card { background:#fff; border:1px solid #e0e0e0; border-radius:8px; padding:14px; }
   .persona-card h3 { font-size:14px; color:#741b47; margin-bottom:10px; }
-  .chk { display:inline-block; width:16px; height:16px; border-radius:3px; border:1px solid #bbb; text-align:center; line-height:16px; font-size:11px; }
+  .chk { display:inline-block; width:16px; height:16px; border-radius:3px; border:1px solid #bbb; text-align:center; line-height:16px; font-size:11px; cursor:pointer; user-select:none; }
   .chk.on { background:#137333; color:#fff; border-color:#137333; }
   footer { padding:20px 24px; font-size:12px; color:#5f6368; border-top:1px solid #dadce0; margin-top:20px; }
   .empty { padding:20px; color:#888; font-size:13px; }
@@ -101,12 +101,24 @@ function renderMensual(d){
   h+=renderTable(d.auditorias);
   return h;
 }
+const AVISOS_KEY='scz1_avisos_estado';
+function avisosState(){ try{return JSON.parse(localStorage.getItem(AVISOS_KEY))||{};}catch(e){return {};} }
+function avisosSave(s){ localStorage.setItem(AVISOS_KEY, JSON.stringify(s)); }
+function toggleAviso(k, el){
+  const s=avisosState(); s[k]=!s[k]; avisosSave(s);
+  el.classList.toggle('on', s[k]); el.innerHTML = s[k] ? '&#10003;' : '';
+}
 function renderAvisos(personas){
+  const s=avisosState();
   let h='<div class="avisos-grid">';
   for(const p of personas){
     h+='<div class="persona-card"><h3>'+esc(p.persona)+'</h3><div class="card"><table><thead><tr><th>Mes</th>'+p.categorias.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr></thead><tbody>';
     for(const m of p.meses){
-      h+='<tr><td><b>'+esc(m.mes)+'</b></td>'+m.valores.map(v=>'<td><span class="chk '+(v?'on':'')+'">'+(v?'&#10003;':'')+'</span></td>').join('')+'</tr>';
+      h+='<tr><td><b>'+esc(m.mes)+'</b></td>'+m.valores.map((v,ci)=>{
+        const key=p.persona+'|'+m.mes+'|'+p.categorias[ci];
+        const on=(key in s)?s[key]:!!v;
+        return '<td><span class="chk'+(on?' on':'')+'" onclick="toggleAviso(\''+key.replace(/'/g,"\\'")+'\',this)">'+(on?'&#10003;':'')+'</span></td>';
+      }).join('')+'</tr>';
     }
     h+='</tbody></table></div></div>';
   }
