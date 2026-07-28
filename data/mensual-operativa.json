@@ -1,0 +1,156 @@
+{
+  "moki": {
+    "url": "https://moki.app/es/login",
+    "empresa": "ml_transportes",
+    "instructivo": "https://docs.google.com/presentation/d/1Q37g8wTRnFLGphXNlE-P4zKyPC258Ph4j3jOcx77Pp0/edit"
+  },
+  "auditorias": [
+    {
+      "AUDITORIA": "Induccion y etiquetado",
+      "MES": "Mayo",
+      "AUDITOR": "SEBA",
+      "%": "90,00%",
+      "OBSERVACION": "Manipulacion de pallets de a un rep"
+    },
+    {
+      "AUDITORIA": "Induccion y etiquetado",
+      "MES": "Junio",
+      "AUDITOR": "SANTI",
+      "%": "100,00%",
+      "OBSERVACION": ""
+    },
+    {
+      "AUDITORIA": "Induccion y etiquetado",
+      "MES": "Julio",
+      "AUDITOR": "SANTI",
+      "%": "60,00%",
+      "OBSERVACION": "Saturacion y desorden en la tolva"
+    },
+    {
+      "AUDITORIA": "Gestion SHE",
+      "MES": "Mayo",
+      "AUDITOR": "SEBA",
+      "%": "92,89%",
+      "OBSERVACION": ""
+    },
+    {
+      "AUDITORIA": "Gestion SHE",
+      "MES": "Junio",
+      "AUDITOR": "SEBA",
+      "%": "100,00%",
+      "OBSERVACION": ""
+    },
+    {
+      "AUDITORIA": "Gestion SHE",
+      "MES": "Julio",
+      "AUDITOR": "SEBA",
+      "%": "100,00%",
+      "OBSERVACION": ""
+    },
+    {
+      "AUDITORIA": "Gestion de TL",
+      "MES": "Mayo",
+      "AUDITOR": "SEBA",
+      "%": "100,00%",
+      "OBSERVACION": ""
+    },
+    {
+      "AUDITORIA": "Gestion de TL",
+      "MES": "Junio",
+      "AUDITOR": "SEBA",
+      "%": "100,00%",
+      "OBSERVACION": ""
+    },
+    {
+      "AUDITORIA": "Gestion de TL",
+      "MES": "Julio",
+      "AUDITOR": "SEBA",
+      "%": "83,33%",
+      "OBSERVACION": "Baker's con bandejas deformadas"
+    },
+    {
+      "AUDITORIA": "Recepcion",
+      "MES": "Mayo",
+      "AUDITOR": "SEBA",
+      "%": "100,00%",
+      "OBSERVACION": ""
+    },
+    {
+      "AUDITORIA": "Recepcion",
+      "MES": "Junio",
+      "AUDITOR": "SANTI",
+      "%": "100,00%",
+      "OBSERVACION": ""
+    },
+    {
+      "AUDITORIA": "Recepcion",
+      "MES": "Julio",
+      "AUDITOR": "SANTI",
+      "%": "100,00%",
+      "OBSERVACION": ""
+    },
+    {
+      "AUDITORIA": "Gestion de Paquetes",
+      "MES": "Mayo",
+      "AUDITOR": "SEBA",
+      "%": "77,78%",
+      "OBSERVACION": "Proceso de Inventario mal realizado"
+    },
+    {
+      "AUDITORIA": "Gestion de Paquetes",
+      "MES": "Junio",
+      "AUDITOR": "DIEGO",
+      "%": "100,00%",
+      "OBSERVACION": ""
+    },
+    {
+      "AUDITORIA": "Gestion de Paquetes",
+      "MES": "Julio",
+      "AUDITOR": "DIEGO",
+      "%": "100,00%",
+      "OBSERVACION": ""
+    },
+    {
+      "AUDITORIA": "Despacho",
+      "MES": "Mayo",
+      "AUDITOR": "SEBA",
+      "%": "95,45%",
+      "OBSERVACION": "Inicio de despacho con rutas abiertas"
+    },
+    {
+      "AUDITORIA": "Despacho",
+      "MES": "Junio",
+      "AUDITOR": "DIEGO",
+      "%": "100,00%",
+      "OBSERVACION": ""
+    },
+    {
+      "AUDITORIA": "Despacho",
+      "MES": "Julio",
+      "AUDITOR": "DIEGO",
+      "%": "100,00%",
+      "OBSERVACION": ""
+    },
+    {
+      "AUDITORIA": "Pesca y Contenerizacion",
+      "MES": "Mayo",
+      "AUDITOR": "SEBA",
+      "%": "90,48%",
+      "OBSERVACION": "Exceso de reflujo"
+    },
+    {
+      "AUDITORIA": "Pesca y Contenerizacion",
+      "MES": "Junio",
+      "AUDITOR": "SANTI",
+      "%": "90,91%",
+      "OBSERVACION": "Paquetes procesados por One bip"
+    },
+    {
+      "AUDITORIA": "Pesca y Contenerizacion",
+      "MES": "Julio",
+      "AUDITOR": "SANTI",
+      "%": "81,82%",
+      "OBSERVACION": "Baker's en zonas que no corresponden"
+    }
+  ]
+}
