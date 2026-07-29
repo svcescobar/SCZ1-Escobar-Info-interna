@@ -141,7 +141,7 @@ function renderAvisos(personas){
 }
 const PLAN_KEY='scz1_plan';
 let PLAN=[], PLAN_SEC=null, PLAN_TITLE='Plan de Trabajo 2026';
-let planCols=[], planRefKey=null, planRegKey=null, planFilter={ref:'',reg:''}, planEdit=null;
+let planCols=[], planRefKey=null, planRegKey=null, planFilter={ref:'',reg:''}, planEdit=null, planNewIdx=null;
 function planLoadBase(base){ try{const s=localStorage.getItem(PLAN_KEY); if(s) return JSON.parse(s);}catch(e){} return base.map(r=>Object.assign({},r)); }
 function planSave(){ localStorage.setItem(PLAN_KEY, JSON.stringify(PLAN)); }
 function planIsLinkCol(c){ return /link/i.test(c); }
@@ -156,21 +156,17 @@ function planFilteredIdx(){
 }
 function planSetFilter(w,v){ planFilter[w]=v; planEdit=null; renderPlanInto(); }
 function planStartEdit(i){ planEdit=i; renderPlanInto(); }
-function planCancelEdit(){ planEdit=null; renderPlanInto(); }
-function planDelete(i){ if(!confirm('Eliminar esta tarea?')) return; PLAN.splice(i,1); planEdit=null; planSave(); renderPlanInto(); }
+function planCancelEdit(){ if(planNewIdx!==null&&planEdit===planNewIdx){ PLAN.splice(planNewIdx,1); } planNewIdx=null; planEdit=null; renderPlanInto(); }
+function planDelete(i){ if(!confirm('Eliminar esta tarea?')) return; PLAN.splice(i,1); planNewIdx=null; planEdit=null; planSave(); renderPlanInto(); }
 function planSaveRow(i){
   planCols.forEach((c,ci)=>{ const el=PLAN_SEC.querySelector('[data-edit="'+i+'::'+ci+'"]'); if(el) PLAN[i][c]=el.value; });
-  planEdit=null; planSave(); renderPlanInto();
+  planNewIdx=null; planEdit=null; planSave(); renderPlanInto();
 }
-function planExport(){
-  const blob=new Blob([JSON.stringify(PLAN,null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download='plan-trabajo.json'; a.click(); URL.revokeObjectURL(a.href);
-}
-function planReset(){
-  if(!confirm('Descartar cambios locales y volver al JSON del repositorio?')) return;
-  localStorage.removeItem(PLAN_KEY);
-  const t=TABS.find(x=>x.id==='plan'); PLAN_SEC.dataset.loaded=''; load(t);
+function planNew(){
+  planFilter={ref:'',reg:''};
+  const row={}; planCols.forEach(c=>row[c]='');
+  PLAN.push(row); planNewIdx=PLAN.length-1; planEdit=planNewIdx;
+  renderPlanInto();
 }
 function planInit(base, sec, title){
   PLAN_SEC=sec; PLAN_TITLE=title; PLAN=planLoadBase(base);
@@ -185,7 +181,7 @@ function renderPlanInto(){
   let h='<h2>'+esc(PLAN_TITLE)+'</h2><div class="plan-bar">';
   if(planRefKey) h+='<label>Referente <select onchange="planSetFilter(\'ref\',this.value)"><option value="">Todos</option>'+planUnique(planRefKey).map(v=>'<option'+(planFilter.ref===String(v)?' selected':'')+'>'+esc(v)+'</option>').join('')+'</select></label>';
   if(planRegKey) h+='<label>Regularidad <select onchange="planSetFilter(\'reg\',this.value)"><option value="">Todas</option>'+planUnique(planRegKey).map(v=>'<option'+(planFilter.reg===String(v)?' selected':'')+'>'+esc(v)+'</option>').join('')+'</select></label>';
-  h+='<span class="plan-spacer"></span><button class="btn" onclick="planExport()">Exportar JSON</button><button class="btn btn-ghost" onclick="planReset()">Restablecer</button></div>';
+  h+='<span class="plan-spacer"></span><button class="btn" onclick="planNew()">Nueva tarea</button></div>';
   const idx=planFilteredIdx();
   h+='<div class="card"><table><thead><tr>'+planCols.map(c=>'<th>'+esc(c)+'</th>').join('')+'<th>Acciones</th></tr></thead><tbody>';
   if(!idx.length) h+='<tr><td colspan="'+(planCols.length+1)+'" class="empty">Sin tareas.</td></tr>';
