@@ -106,15 +106,57 @@ function renderTable(rows){
   }
   return h+'</tbody></table></div>';
 }
-function renderMensual(d){
+function mokiBlock(moki){
   let h='<div class="moki"><h3>Acceso Moki</h3>';
-  h+='<div class="row"><span class="k">Portal</span>'+link(d.moki.url, d.moki.url)+'</div>';
-  h+='<div class="row"><span class="k">Empresa</span>'+esc(d.moki.empresa)+'</div>';
-  if(d.moki.instructivo) h+='<div class="row"><span class="k">Instructivo</span>'+link(d.moki.instructivo,'Ver instructivo')+'</div>';
+  h+='<div class="row"><span class="k">Portal</span>'+link(moki.url, moki.url)+'</div>';
+  h+='<div class="row"><span class="k">Empresa</span>'+esc(moki.empresa)+'</div>';
+  if(moki.instructivo) h+='<div class="row"><span class="k">Instructivo</span>'+link(moki.instructivo,'Ver instructivo')+'</div>';
   h+='<div class="note">Usuario y contrase&ntilde;a no se publican en este portal p&uacute;blico por seguridad. Se gestionan de forma interna.</div></div>';
-  h+='<h2 style="margin-top:6px">Auditorias mensuales</h2>';
-  h+=renderTable(d.auditorias);
   return h;
+}
+const MEN_KEY='scz1_mensual';
+let MEN=[], MEN_SEC=null, MEN_TITLE='Mensual Operativa', MEN_MOKI=null;
+let menCols=[], menMesKey=null, menAudKey=null, menEditCols=[], menEdit=null;
+function menLoadBase(base){ try{const s=localStorage.getItem(MEN_KEY); if(s) return JSON.parse(s);}catch(e){} return base.map(r=>Object.assign({},r)); }
+function menSave(){ localStorage.setItem(MEN_KEY, JSON.stringify(MEN)); }
+function menMonths(){ const s=[]; for(const r of MEN){ const m=r[menMesKey]; if(m!=null&&!s.includes(m)) s.push(m); } return s; }
+function menTemplate(){ const s=[]; for(const r of MEN){ const a=r[menAudKey]; if(a!=null&&!s.includes(a)) s.push(a); } return s; }
+function menIdxByMonth(m){ return MEN.map((r,i)=>i).filter(i=>MEN[i][menMesKey]===m); }
+function menStartEdit(i){ menEdit=i; renderMenInto(); }
+function menCancelEdit(){ menEdit=null; renderMenInto(); }
+function menSaveRow(i){ menEditCols.forEach((c,ci)=>{ const el=MEN_SEC.querySelector('[data-medit="'+i+'::'+ci+'"]'); if(el) MEN[i][c]=el.value; }); menEdit=null; menSave(); renderMenInto(); }
+function menAddMonth(){
+  const m=prompt('Nombre del mes a agregar (ej: Agosto)'); if(!m) return;
+  if(menMonths().includes(m)){ alert('Ese mes ya existe.'); return; }
+  menTemplate().forEach(a=>{ const row={}; menCols.forEach(c=>row[c]=''); row[menMesKey]=m; row[menAudKey]=a; MEN.push(row); });
+  menEdit=null; menSave(); renderMenInto();
+}
+function menInit(d, sec, title){
+  MEN_SEC=sec; MEN_TITLE=title; MEN_MOKI=d.moki; MEN=menLoadBase(d.auditorias||[]);
+  const cols=(d.auditorias&&d.auditorias.length)?Object.keys(d.auditorias[0]):(MEN.length?Object.keys(MEN[0]):[]);
+  menCols=cols;
+  menMesKey=cols.find(c=>/mes/i.test(c))||null;
+  menAudKey=cols.find(c=>/auditoria/i.test(c))||null;
+  menEditCols=cols.filter(c=>c!==menMesKey&&c!==menAudKey);
+  menEdit=null; renderMenInto();
+}
+function renderMenInto(){
+  const sec=MEN_SEC; if(!sec) return;
+  let h='<h2>'+esc(MEN_TITLE)+'</h2>'+mokiBlock(MEN_MOKI);
+  h+='<div class="plan-bar"><h2 style="margin:0">Auditorias mensuales</h2><span class="plan-spacer"></span><button class="btn" onclick="menAddMonth()">Agregar mes</button></div>';
+  for(const m of menMonths()){
+    h+='<h3 style="color:#741b47;margin:14px 0 8px">'+esc(m)+'</h3><div class="card"><table><thead><tr><th>'+esc(menAudKey||'Auditoria')+'</th>'+menEditCols.map(c=>'<th>'+esc(c)+'</th>').join('')+'<th>Acciones</th></tr></thead><tbody>';
+    for(const i of menIdxByMonth(m)){
+      const r=MEN[i];
+      if(menEdit===i){
+        h+='<tr><td>'+esc(r[menAudKey])+'</td>'+menEditCols.map((c,ci)=>'<td><input class="plan-in" data-medit="'+i+'::'+ci+'" value="'+esc(r[c])+'"></td>').join('')+'<td class="plan-act"><button class="btn btn-sm" onclick="menSaveRow('+i+')">Guardar</button> <button class="btn btn-ghost btn-sm" onclick="menCancelEdit()">Cancelar</button></td></tr>';
+      } else {
+        h+='<tr><td>'+esc(r[menAudKey])+'</td>'+menEditCols.map(c=>{ let v=r[c]; if(isLink(v)) return '<td>'+link(v)+'</td>'; return '<td>'+(v===''||v==null?'<span class="muted">&mdash;</span>':esc(v))+'</td>'; }).join('')+'<td class="plan-act"><button class="ico" title="Editar" onclick="menStartEdit('+i+')">&#9998;</button></td></tr>';
+      }
+    }
+    h+='</tbody></table></div>';
+  }
+  sec.innerHTML=h;
 }
 const AVISOS_KEY='scz1_avisos_estado';
 function avisosState(){ try{return JSON.parse(localStorage.getItem(AVISOS_KEY))||{};}catch(e){return {};} }
@@ -213,10 +255,10 @@ async function load(tab){
   try{
     const res=await fetch(tab.file); const data=await res.json();
     if(tab.type==='plan'){ planInit(data, sec, tab.label); }
+    else if(tab.type==='mensual'){ menInit(data, sec, tab.label); }
     else {
       let body='';
-      if(tab.type==='mensual') body=renderMensual(data);
-      else if(tab.type==='avisos') body=renderAvisos(data);
+      if(tab.type==='avisos') body=renderAvisos(data);
       else body=renderTable(data);
       sec.innerHTML='<h2>'+esc(tab.label)+'</h2>'+body;
     }
