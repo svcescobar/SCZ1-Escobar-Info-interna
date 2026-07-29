@@ -42,6 +42,21 @@
   .chk.on { background:#137333; color:#fff; border-color:#137333; }
   footer { padding:20px 24px; font-size:12px; color:#5f6368; border-top:1px solid #dadce0; margin-top:20px; }
   .empty { padding:20px; color:#888; font-size:13px; }
+  .plan-bar { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
+  .plan-bar label { font-size:13px; color:#5f6368; display:flex; align-items:center; gap:6px; }
+  .plan-bar select { padding:6px 8px; border:1px solid #dadce0; border-radius:6px; font-size:13px; background:#fff; }
+  .plan-spacer { flex:1; }
+  .btn { background:#741b47; color:#fff; border:none; padding:7px 14px; border-radius:6px; font-size:13px; cursor:pointer; }
+  .btn:hover { background:#5e153a; }
+  .btn-ghost { background:#fff; color:#741b47; border:1px solid #741b47; }
+  .btn-ghost:hover { background:#f7eef3; }
+  .btn-sm { padding:4px 10px; font-size:12px; }
+  .plan-in { width:100%; min-width:90px; padding:5px 7px; border:1px solid #dadce0; border-radius:5px; font-size:13px; }
+  .plan-act { white-space:nowrap; }
+  .ico { background:none; border:none; cursor:pointer; font-size:15px; padding:2px 6px; border-radius:5px; color:#5f6368; }
+  .ico:hover { background:#f1f3f4; }
+  .ico-del:hover { background:#fce8e6; color:#c5221f; }
+  .muted { color:#bbb; }
 </style>
 </head>
 <body>
@@ -74,7 +89,7 @@ function badge(v){
   return v;
 }
 function link(u,t){ if(!u) return ''; return '<a href="'+u+'" target="_blank" rel="noopener">'+(t||'Abrir')+'</a>'; }
-function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function isStatus(k){ return /status|resuelto|resuelta/i.test(k); }
 function isLink(v){ return typeof v==='string' && /^https?:\/\//.test(v); }
 function renderTable(rows){
@@ -124,6 +139,71 @@ function renderAvisos(personas){
   }
   return h+'</div>';
 }
+const PLAN_KEY='scz1_plan';
+let PLAN=[], PLAN_SEC=null, PLAN_TITLE='Plan de Trabajo 2026';
+let planCols=[], planRefKey=null, planRegKey=null, planFilter={ref:'',reg:''}, planEdit=null;
+function planLoadBase(base){ try{const s=localStorage.getItem(PLAN_KEY); if(s) return JSON.parse(s);}catch(e){} return base.map(r=>Object.assign({},r)); }
+function planSave(){ localStorage.setItem(PLAN_KEY, JSON.stringify(PLAN)); }
+function planIsLinkCol(c){ return /link/i.test(c); }
+function planUnique(key){ return [...new Set(PLAN.map(r=>r[key]).filter(v=>v!=null&&v!==''))]; }
+function planFilteredIdx(){
+  return PLAN.map((r,i)=>i).filter(i=>{
+    const r=PLAN[i];
+    if(planRefKey&&planFilter.ref&&String(r[planRefKey])!==planFilter.ref) return false;
+    if(planRegKey&&planFilter.reg&&String(r[planRegKey])!==planFilter.reg) return false;
+    return true;
+  });
+}
+function planSetFilter(w,v){ planFilter[w]=v; planEdit=null; renderPlanInto(); }
+function planStartEdit(i){ planEdit=i; renderPlanInto(); }
+function planCancelEdit(){ planEdit=null; renderPlanInto(); }
+function planDelete(i){ if(!confirm('Eliminar esta tarea?')) return; PLAN.splice(i,1); planEdit=null; planSave(); renderPlanInto(); }
+function planSaveRow(i){
+  planCols.forEach((c,ci)=>{ const el=PLAN_SEC.querySelector('[data-edit="'+i+'::'+ci+'"]'); if(el) PLAN[i][c]=el.value; });
+  planEdit=null; planSave(); renderPlanInto();
+}
+function planExport(){
+  const blob=new Blob([JSON.stringify(PLAN,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='plan-trabajo.json'; a.click(); URL.revokeObjectURL(a.href);
+}
+function planReset(){
+  if(!confirm('Descartar cambios locales y volver al JSON del repositorio?')) return;
+  localStorage.removeItem(PLAN_KEY);
+  const t=TABS.find(x=>x.id==='plan'); PLAN_SEC.dataset.loaded=''; load(t);
+}
+function planInit(base, sec, title){
+  PLAN_SEC=sec; PLAN_TITLE=title; PLAN=planLoadBase(base);
+  planCols = base.length?Object.keys(base[0]):(PLAN.length?Object.keys(PLAN[0]):[]);
+  planRefKey = planCols.find(c=>/referente/i.test(c))||null;
+  planRegKey = planCols.find(c=>/regularidad/i.test(c))||null;
+  planFilter={ref:'',reg:''}; planEdit=null;
+  renderPlanInto();
+}
+function renderPlanInto(){
+  const sec=PLAN_SEC; if(!sec) return;
+  let h='<h2>'+esc(PLAN_TITLE)+'</h2><div class="plan-bar">';
+  if(planRefKey) h+='<label>Referente <select onchange="planSetFilter(\'ref\',this.value)"><option value="">Todos</option>'+planUnique(planRefKey).map(v=>'<option'+(planFilter.ref===String(v)?' selected':'')+'>'+esc(v)+'</option>').join('')+'</select></label>';
+  if(planRegKey) h+='<label>Regularidad <select onchange="planSetFilter(\'reg\',this.value)"><option value="">Todas</option>'+planUnique(planRegKey).map(v=>'<option'+(planFilter.reg===String(v)?' selected':'')+'>'+esc(v)+'</option>').join('')+'</select></label>';
+  h+='<span class="plan-spacer"></span><button class="btn" onclick="planExport()">Exportar JSON</button><button class="btn btn-ghost" onclick="planReset()">Restablecer</button></div>';
+  const idx=planFilteredIdx();
+  h+='<div class="card"><table><thead><tr>'+planCols.map(c=>'<th>'+esc(c)+'</th>').join('')+'<th>Acciones</th></tr></thead><tbody>';
+  if(!idx.length) h+='<tr><td colspan="'+(planCols.length+1)+'" class="empty">Sin tareas.</td></tr>';
+  for(const i of idx){
+    const r=PLAN[i];
+    if(planEdit===i){
+      h+='<tr>'+planCols.map((c,ci)=>'<td><input class="plan-in" data-edit="'+i+'::'+ci+'" value="'+esc(r[c])+'"></td>').join('')+'<td class="plan-act"><button class="btn btn-sm" onclick="planSaveRow('+i+')">Guardar</button> <button class="btn btn-ghost btn-sm" onclick="planCancelEdit()">Cancelar</button></td></tr>';
+    } else {
+      h+='<tr>'+planCols.map(c=>{
+        let v=r[c];
+        if(planIsLinkCol(c)) return '<td>'+(v?link(v):'<span class="muted">&mdash;</span>')+'</td>';
+        if(isLink(v)) return '<td>'+link(v)+'</td>';
+        return '<td>'+esc(v)+'</td>';
+      }).join('')+'<td class="plan-act"><button class="ico" title="Editar" onclick="planStartEdit('+i+')">&#9998;</button> <button class="ico ico-del" title="Eliminar" onclick="planDelete('+i+')">&#128465;</button></td></tr>';
+    }
+  }
+  sec.innerHTML=h+'</tbody></table></div>';
+}
 async function load(tab){
   const main=document.getElementById('main');
   let sec=document.getElementById('sec-'+tab.id);
@@ -136,11 +216,14 @@ async function load(tab){
   sec.innerHTML='<h2>'+esc(tab.label)+'</h2><div class="empty">Cargando...</div>';
   try{
     const res=await fetch(tab.file); const data=await res.json();
-    let body='';
-    if(tab.type==='mensual') body=renderMensual(data);
-    else if(tab.type==='avisos') body=renderAvisos(data);
-    else body=renderTable(data);
-    sec.innerHTML='<h2>'+esc(tab.label)+'</h2>'+body;
+    if(tab.type==='plan'){ planInit(data, sec, tab.label); }
+    else {
+      let body='';
+      if(tab.type==='mensual') body=renderMensual(data);
+      else if(tab.type==='avisos') body=renderAvisos(data);
+      else body=renderTable(data);
+      sec.innerHTML='<h2>'+esc(tab.label)+'</h2>'+body;
+    }
     sec.dataset.loaded='1';
   }catch(e){ sec.innerHTML='<h2>'+esc(tab.label)+'</h2><div class="empty">No se pudo cargar '+tab.file+'</div>'; }
 }
