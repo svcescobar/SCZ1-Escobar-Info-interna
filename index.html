@@ -57,6 +57,8 @@
   .ico:hover { background:#f1f3f4; }
   .ico-del:hover { background:#fce8e6; color:#c5221f; }
   .muted { color:#bbb; }
+  .sp-import { background:#fff; border:1px solid #e0e0e0; border-radius:8px; padding:14px 16px; margin-bottom:8px; }
+  .sp-ta { width:100%; min-height:90px; font-family:monospace; font-size:12px; padding:8px; border:1px solid #dadce0; border-radius:6px; resize:vertical; }
 </style>
 </head>
 <body>
@@ -75,7 +77,7 @@ const TABS = [
   {id:'plan', label:'Plan de Trabajo 2026', color:'#4285f4', file:'data/plan-trabajo.json', type:'plan'},
   {id:'proyectos', label:'Proyectos SCZ1', color:'#34a853', file:'data/proyectos.json', type:'proyectos'},
   {id:'mensual', label:'Mensual Operativa', color:'#741b47', file:'data/mensual-operativa.json', type:'mensual'},
-  {id:'solucion', label:'Solucion de problemas', color:'#fbbc04', file:'data/solucion-problemas.json', type:'table'},
+  {id:'solucion', label:'Solucion de problemas', color:'#fbbc04', file:'data/solucion-problemas.json', type:'solucion'},
   {id:'onway', label:'On Way', color:'#ff6d01', file:'data/on-way.json', type:'table'},
   {id:'estacion', label:'Estacion Errada', color:'#ea4335', file:'data/estacion-errada.json', type:'table'},
   {id:'avisos', label:'Avisos de Riesgo', color:'#9c27b0', file:'data/avisos-riesgo.json', type:'avisos'},
@@ -242,6 +244,95 @@ function renderPlanInto(){
   }
   sec.innerHTML=h+'</tbody></table></div>';
 }
+const SP_KEY='scz1_sp';
+let SP={pendientes:[],historico:[]}, SP_SEC=null, SP_TITLE='Solucion de problemas';
+function spLoad(){ try{const s=localStorage.getItem(SP_KEY); return s?JSON.parse(s):null;}catch(e){return null;} }
+function spSave(){ localStorage.setItem(SP_KEY, JSON.stringify(SP)); }
+function spNorm(r){
+  const g=(re)=>{ for(const k in r){ if(re.test(k)) return r[k]; } return ''; };
+  return {
+    svc:g(/^svc$/i),
+    id:String(g(/shipment_id/i)||g(/^id$/i)||'').trim(),
+    subStatus:g(/sub.?status/i),
+    destino:g(/destino/i),
+    fecha:g(/fecha/i)||g(/last.?status/i),
+    descripcion:g(/descripcion/i),
+    usd:g(/usd/i)||g(/dolar/i),
+    observacion:g(/observacion/i)||''
+  };
+}
+function spParseCSV(text){
+  const rows=[]; let i=0,f='',row=[],q=false;
+  while(i<text.length){ const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){f+='"';i+=2;continue;} q=false;i++;continue;} f+=c;i++;continue; }
+    if(c==='"'){q=true;i++;continue;}
+    if(c===','){row.push(f);f='';i++;continue;}
+    if(c==='\r'){i++;continue;}
+    if(c==='\n'){row.push(f);rows.push(row);row=[];f='';i++;continue;}
+    f+=c;i++;
+  }
+  if(f!==''||row.length){row.push(f);rows.push(row);}
+  return rows;
+}
+function spParse(text){
+  text=text.trim(); if(!text) return [];
+  if(text[0]==='[') return JSON.parse(text);
+  if(text[0]==='{') return text.split(/\r?\n/).filter(l=>l.trim()).map(l=>JSON.parse(l));
+  const rows=spParseCSV(text); if(rows.length<2) return [];
+  const hdr=rows[0].map(h=>h.trim());
+  return rows.slice(1).filter(r=>r.some(c=>c!=='')).map(r=>{ const o={}; hdr.forEach((h,j)=>o[h]=r[j]!=null?r[j]:''); return o; });
+}
+function spImport(text){
+  let raw; try{ raw=spParse(text); }catch(e){ alert('No pude parsear. Verificá que sea JSON o CSV válido.'); return; }
+  if(!raw||!raw.length){ alert('No se detectaron filas.'); return; }
+  const incoming=raw.map(spNorm).filter(x=>x.id);
+  if(!incoming.length){ alert('No encontré la columna de ID (SHP_SHIPMENT_ID).'); return; }
+  const prevObs={}; SP.pendientes.forEach(p=>{ if(p.observacion) prevObs[p.id]=p.observacion; });
+  SP.pendientes=incoming.map(x=>{ if(prevObs[x.id]!=null) x.observacion=prevObs[x.id]; return x; });
+  spSave(); renderSPInto();
+  alert(SP.pendientes.length+' pendientes cargados.');
+}
+function spFile(input){ const f=input.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ spImport(rd.result); input.value=''; }; rd.readAsText(f); }
+function spSetObs(id,val){ const p=SP.pendientes.find(p=>p.id===id); if(p){ p.observacion=val; spSave(); } }
+function spResolve(id){
+  const i=SP.pendientes.findIndex(p=>p.id===id); if(i<0) return;
+  const row=SP.pendientes.splice(i,1)[0];
+  row.resueltoEn=new Date().toISOString().slice(0,10);
+  SP.historico.unshift(row); spSave(); renderSPInto();
+}
+function spUsd(v){ if(v===''||v==null) return '<span class="muted">&mdash;</span>'; const n=parseFloat(String(v).replace(',','.')); return isNaN(n)?esc(v):'$'+n.toFixed(2); }
+function spTable(rows, pending){
+  if(!rows.length) return '<div class="card"><div class="empty">'+(pending?'Sin pendientes. Importá el resultado de la query.':'Sin resueltos todavía.')+'</div></div>';
+  let h='<div class="card"><table><thead><tr><th>SVC</th><th>ID</th><th>Sub status</th><th>Destino</th><th>Fecha</th><th>Descripcion</th><th>USD</th><th>Observacion</th><th>'+(pending?'Accion':'Resuelto')+'</th></tr></thead><tbody>';
+  for(const r of rows){
+    h+='<tr><td>'+esc(r.svc)+'</td><td>'+esc(r.id)+'</td><td>'+badge(r.subStatus)+'</td><td>'+esc(r.destino)+'</td><td>'+esc(r.fecha)+'</td><td>'+esc(r.descripcion)+'</td><td>'+spUsd(r.usd)+'</td>';
+    if(pending){
+      h+='<td><input class="plan-in" value="'+esc(r.observacion)+'" onchange="spSetObs(\''+esc(r.id)+'\',this.value)"></td>';
+      h+='<td class="plan-act"><button class="btn btn-sm" onclick="spResolve(\''+esc(r.id)+'\')">Resolver</button></td>';
+    } else {
+      h+='<td>'+(r.observacion?esc(r.observacion):'<span class="muted">&mdash;</span>')+'</td><td>'+esc(r.resueltoEn||'')+'</td>';
+    }
+    h+='</tr>';
+  }
+  return h+'</tbody></table></div>';
+}
+function renderSPInto(){
+  const sec=SP_SEC; if(!sec) return;
+  let h='<h2>'+esc(SP_TITLE)+'</h2>';
+  h+='<div class="sp-import"><b>Actualizar desde la query</b><div class="muted" style="margin:4px 0 8px">Peg\u00e1 el resultado de BigQuery (JSON, NDJSON o CSV) o sub\u00ed el archivo exportado. Merge por ID: se mantienen tus observaciones de los que siguen y se quitan los que ya no aparecen.</div>';
+  h+='<textarea id="sp-paste" class="sp-ta" placeholder="Peg\u00e1 JSON o CSV..."></textarea>';
+  h+='<div class="plan-bar" style="margin-top:8px"><button class="btn" onclick="spImport(document.getElementById(\'sp-paste\').value)">Importar</button><label class="btn btn-ghost" style="cursor:pointer">Subir archivo<input type="file" accept=".json,.csv,.txt" style="display:none" onchange="spFile(this)"></label></div></div>';
+  h+='<h3 style="color:#741b47;margin:16px 0 8px">Pendientes ('+SP.pendientes.length+')</h3>'+spTable(SP.pendientes,true);
+  h+='<h3 style="color:#741b47;margin:20px 0 8px">Hist\u00f3rico resueltos ('+SP.historico.length+')</h3>'+spTable(SP.historico,false);
+  sec.innerHTML=h;
+}
+function spInit(base, sec, title){
+  SP_SEC=sec; SP_TITLE=title;
+  const stored=spLoad();
+  if(stored) SP=stored;
+  else { SP={pendientes:(Array.isArray(base)?base:[]).map(spNorm).filter(x=>x.id), historico:[]}; spSave(); }
+  renderSPInto();
+}
 async function load(tab){
   const main=document.getElementById('main');
   let sec=document.getElementById('sec-'+tab.id);
@@ -256,6 +347,7 @@ async function load(tab){
     const res=await fetch(tab.file); const data=await res.json();
     if(tab.type==='plan'){ planInit(data, sec, tab.label); }
     else if(tab.type==='mensual'){ menInit(data, sec, tab.label); }
+    else if(tab.type==='solucion'){ spInit(data, sec, tab.label); }
     else {
       let body='';
       if(tab.type==='avisos') body=renderAvisos(data);
