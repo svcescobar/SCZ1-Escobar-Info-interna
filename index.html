@@ -294,23 +294,30 @@ function spImport(text){
 }
 function spFile(input){ const f=input.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ spImport(rd.result); input.value=''; }; rd.readAsText(f); }
 function spSetObs(id,val){ const p=SP.pendientes.find(p=>p.id===id); if(p){ p.observacion=val; spSave(); } }
+function spSetObsHist(id,val){ const p=SP.historico.find(p=>p.id===id); if(p){ p.observacion=val; spSave(); } }
 function spResolve(id){
   const i=SP.pendientes.findIndex(p=>p.id===id); if(i<0) return;
   const row=SP.pendientes.splice(i,1)[0];
   row.resueltoEn=new Date().toISOString().slice(0,10);
   SP.historico.unshift(row); spSave(); renderSPInto();
 }
+function spReopen(id){
+  const i=SP.historico.findIndex(p=>p.id===id); if(i<0) return;
+  const row=SP.historico.splice(i,1)[0]; delete row.resueltoEn;
+  if(!SP.pendientes.some(p=>p.id===row.id)) SP.pendientes.unshift(row);
+  spSave(); renderSPInto();
+}
 function spUsd(v){ if(v===''||v==null) return '<span class="muted">&mdash;</span>'; const n=parseFloat(String(v).replace(',','.')); return isNaN(n)?esc(v):'$'+n.toFixed(2); }
 function spTable(rows, pending){
   if(!rows.length) return '<div class="card"><div class="empty">'+(pending?'Sin pendientes. Importá el resultado de la query.':'Sin resueltos todavía.')+'</div></div>';
-  let h='<div class="card"><table><thead><tr><th>SVC</th><th>ID</th><th>Sub status</th><th>Destino</th><th>Fecha</th><th>Descripcion</th><th>USD</th><th>Observacion</th><th>'+(pending?'Accion':'Resuelto')+'</th></tr></thead><tbody>';
+  let h='<div class="card"><table><thead><tr><th>SVC</th><th>ID</th><th>Sub status</th><th>Destino</th><th>Fecha</th><th>Descripcion</th><th>USD</th><th>Observacion</th>'+(pending?'':'<th>Resuelto</th>')+'<th>Accion</th></tr></thead><tbody>';
   for(const r of rows){
     h+='<tr><td>'+esc(r.svc)+'</td><td>'+esc(r.id)+'</td><td>'+badge(r.subStatus)+'</td><td>'+esc(r.destino)+'</td><td>'+esc(r.fecha)+'</td><td>'+esc(r.descripcion)+'</td><td>'+spUsd(r.usd)+'</td>';
+    h+='<td><input class="plan-in" value="'+esc(r.observacion)+'" onchange="'+(pending?'spSetObs':'spSetObsHist')+'(\''+esc(r.id)+'\',this.value)"></td>';
     if(pending){
-      h+='<td><input class="plan-in" value="'+esc(r.observacion)+'" onchange="spSetObs(\''+esc(r.id)+'\',this.value)"></td>';
       h+='<td class="plan-act"><button class="btn btn-sm" onclick="spResolve(\''+esc(r.id)+'\')">Resolver</button></td>';
     } else {
-      h+='<td>'+(r.observacion?esc(r.observacion):'<span class="muted">&mdash;</span>')+'</td><td>'+esc(r.resueltoEn||'')+'</td>';
+      h+='<td>'+esc(r.resueltoEn||'')+'</td><td class="plan-act"><button class="btn btn-ghost btn-sm" onclick="spReopen(\''+esc(r.id)+'\')">Reabrir</button></td>';
     }
     h+='</tr>';
   }
