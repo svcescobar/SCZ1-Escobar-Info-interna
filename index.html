@@ -59,6 +59,20 @@
   .muted { color:#bbb; }
   .sp-import { background:#fff; border:1px solid #e0e0e0; border-radius:8px; padding:14px 16px; margin-bottom:8px; }
   .sp-ta { width:100%; min-height:90px; font-family:monospace; font-size:12px; padding:8px; border:1px solid #dadce0; border-radius:6px; resize:vertical; }
+  .kanban { display:flex; gap:14px; align-items:flex-start; overflow-x:auto; padding-bottom:8px; }
+  .kb-col { flex:1; min-width:260px; background:#f1f3f4; border:1px solid #e0e0e0; border-radius:8px; padding:10px; }
+  .kb-head { font-size:13px; font-weight:600; color:#741b47; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+  .kb-count { background:#741b47; color:#fff; border-radius:10px; padding:0 7px; font-size:11px; }
+  .kb-card { background:#fff; border:1px solid #e0e0e0; border-radius:6px; padding:10px; margin-bottom:8px; cursor:grab; box-shadow:0 1px 2px rgba(0,0,0,.05); }
+  .kb-card:active { cursor:grabbing; }
+  .kb-title { font-size:13px; font-weight:600; color:#202124; display:flex; justify-content:space-between; align-items:center; gap:6px; }
+  .kb-det { font-size:12px; color:#5f6368; margin:5px 0; }
+  .kb-meta { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+  .kb-who { background:#efe3ea; color:#741b47; border-radius:10px; padding:1px 8px; font-size:11px; font-weight:600; }
+  .kb-fin { color:#5f6368; font-size:11px; }
+  .kb-empty { color:#9aa0a6; font-size:12px; text-align:center; padding:12px 0; }
+  .prj-form { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px; }
+  .prj-form label { display:flex; flex-direction:column; font-size:12px; color:#5f6368; gap:4px; }
 </style>
 </head>
 <body>
@@ -245,9 +259,9 @@ function renderPlanInto(){
   sec.innerHTML=h+'</tbody></table></div>';
 }
 const SP_KEY='scz1_sp';
-let SP={pendientes:[],historico:[]}, SP_SEC=null, SP_TITLE='Solucion de problemas';
+let SP_PEND=[], SP_HIST=[], SP_OBS={}, SP_SEC=null, SP_TITLE='Solucion de problemas';
 function spLoad(){ try{const s=localStorage.getItem(SP_KEY); return s?JSON.parse(s):null;}catch(e){return null;} }
-function spSave(){ localStorage.setItem(SP_KEY, JSON.stringify(SP)); }
+function spSave(){ localStorage.setItem(SP_KEY, JSON.stringify({obs:SP_OBS, historico:SP_HIST})); }
 function spNorm(r){
   const g=(re)=>{ for(const k in r){ if(re.test(k)) return r[k]; } return ''; };
   return {
@@ -282,29 +296,34 @@ function spParse(text){
   const hdr=rows[0].map(h=>h.trim());
   return rows.slice(1).filter(r=>r.some(c=>c!=='')).map(r=>{ const o={}; hdr.forEach((h,j)=>o[h]=r[j]!=null?r[j]:''); return o; });
 }
+function spApplyBase(list){
+  const incoming=(Array.isArray(list)?list:[]).map(spNorm).filter(x=>x.id);
+  SP_PEND=incoming.map(x=>{ if(SP_OBS[x.id]!=null) x.observacion=SP_OBS[x.id]; return x; });
+  const ids=new Set(incoming.map(x=>x.id));
+  Object.keys(SP_OBS).forEach(k=>{ if(!ids.has(k)) delete SP_OBS[k]; });
+}
 function spImport(text){
   let raw; try{ raw=spParse(text); }catch(e){ alert('No pude parsear. Verificá que sea JSON o CSV válido.'); return; }
   if(!raw||!raw.length){ alert('No se detectaron filas.'); return; }
   const incoming=raw.map(spNorm).filter(x=>x.id);
   if(!incoming.length){ alert('No encontré la columna de ID (SHP_SHIPMENT_ID).'); return; }
-  const prevObs={}; SP.pendientes.forEach(p=>{ if(p.observacion) prevObs[p.id]=p.observacion; });
-  SP.pendientes=incoming.map(x=>{ if(prevObs[x.id]!=null) x.observacion=prevObs[x.id]; return x; });
-  spSave(); renderSPInto();
-  alert(SP.pendientes.length+' pendientes cargados.');
+  spApplyBase(raw); spSave(); renderSPInto();
+  alert(SP_PEND.length+' pendientes cargados.');
 }
 function spFile(input){ const f=input.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ spImport(rd.result); input.value=''; }; rd.readAsText(f); }
-function spSetObs(id,val){ const p=SP.pendientes.find(p=>p.id===id); if(p){ p.observacion=val; spSave(); } }
-function spSetObsHist(id,val){ const p=SP.historico.find(p=>p.id===id); if(p){ p.observacion=val; spSave(); } }
+function spSetObs(id,val){ SP_OBS[id]=val; const p=SP_PEND.find(p=>p.id===id); if(p)p.observacion=val; spSave(); }
+function spSetObsHist(id,val){ const p=SP_HIST.find(p=>p.id===id); if(p){ p.observacion=val; spSave(); } }
 function spResolve(id){
-  const i=SP.pendientes.findIndex(p=>p.id===id); if(i<0) return;
-  const row=SP.pendientes.splice(i,1)[0];
+  const i=SP_PEND.findIndex(p=>p.id===id); if(i<0) return;
+  const row=SP_PEND.splice(i,1)[0];
+  row.observacion=(SP_OBS[id]!=null?SP_OBS[id]:row.observacion)||'';
   row.resueltoEn=new Date().toISOString().slice(0,10);
-  SP.historico.unshift(row); spSave(); renderSPInto();
+  delete SP_OBS[id]; SP_HIST.unshift(row); spSave(); renderSPInto();
 }
 function spReopen(id){
-  const i=SP.historico.findIndex(p=>p.id===id); if(i<0) return;
-  const row=SP.historico.splice(i,1)[0]; delete row.resueltoEn;
-  if(!SP.pendientes.some(p=>p.id===row.id)) SP.pendientes.unshift(row);
+  const i=SP_HIST.findIndex(p=>p.id===id); if(i<0) return;
+  const row=SP_HIST.splice(i,1)[0]; delete row.resueltoEn;
+  if(!SP_PEND.some(p=>p.id===row.id)){ SP_PEND.unshift(row); SP_OBS[row.id]=row.observacion||''; }
   spSave(); renderSPInto();
 }
 function spUsd(v){ if(v===''||v==null) return '<span class="muted">&mdash;</span>'; const n=parseFloat(String(v).replace(',','.')); return isNaN(n)?esc(v):'$'+n.toFixed(2); }
@@ -326,19 +345,92 @@ function spTable(rows, pending){
 function renderSPInto(){
   const sec=SP_SEC; if(!sec) return;
   let h='<h2>'+esc(SP_TITLE)+'</h2>';
-  h+='<div class="sp-import"><b>Actualizar desde la query</b><div class="muted" style="margin:4px 0 8px">Peg\u00e1 el resultado de BigQuery (JSON, NDJSON o CSV) o sub\u00ed el archivo exportado. Merge por ID: se mantienen tus observaciones de los que siguen y se quitan los que ya no aparecen.</div>';
+  h+='<div class="sp-import"><b>Actualizar desde la query</b><div class="muted" style="margin:4px 0 8px">Los pendientes se toman autom\u00e1ticamente de <code>data/solucion-problemas.json</code> (lo que actualice Verdi Flow / n8n). Tus observaciones y el hist\u00f3rico quedan guardados aparte. Tambi\u00e9n pod\u00e9s pegar/subir un resultado manualmente como override.</div>';
   h+='<textarea id="sp-paste" class="sp-ta" placeholder="Peg\u00e1 JSON o CSV..."></textarea>';
   h+='<div class="plan-bar" style="margin-top:8px"><button class="btn" onclick="spImport(document.getElementById(\'sp-paste\').value)">Importar</button><label class="btn btn-ghost" style="cursor:pointer">Subir archivo<input type="file" accept=".json,.csv,.txt" style="display:none" onchange="spFile(this)"></label></div></div>';
-  h+='<h3 style="color:#741b47;margin:16px 0 8px">Pendientes ('+SP.pendientes.length+')</h3>'+spTable(SP.pendientes,true);
-  h+='<h3 style="color:#741b47;margin:20px 0 8px">Hist\u00f3rico resueltos ('+SP.historico.length+')</h3>'+spTable(SP.historico,false);
+  h+='<h3 style="color:#741b47;margin:16px 0 8px">Pendientes ('+SP_PEND.length+')</h3>'+spTable(SP_PEND,true);
+  h+='<h3 style="color:#741b47;margin:20px 0 8px">Hist\u00f3rico resueltos ('+SP_HIST.length+')</h3>'+spTable(SP_HIST,false);
   sec.innerHTML=h;
 }
 function spInit(base, sec, title){
   SP_SEC=sec; SP_TITLE=title;
-  const stored=spLoad();
-  if(stored) SP=stored;
-  else { SP={pendientes:(Array.isArray(base)?base:[]).map(spNorm).filter(x=>x.id), historico:[]}; spSave(); }
-  renderSPInto();
+  const st=spLoad();
+  if(st && st.obs===undefined && Array.isArray(st.pendientes)){
+    SP_OBS={}; (st.pendientes||[]).forEach(p=>{ if(p.observacion) SP_OBS[p.id]=p.observacion; });
+    SP_HIST=st.historico||[];
+  } else {
+    SP_OBS=(st&&st.obs)||{}; SP_HIST=(st&&st.historico)||[];
+  }
+  spApplyBase(base); spSave(); renderSPInto();
+}
+const PRJ_KEY='scz1_proyectos';
+const PRJ_COLS=['Pendiente','En proceso','Completado'];
+let PRJ=[], PRJ_SEC=null, PRJ_TITLE='Proyectos SCZ1';
+let prjCols=[], prjProjKey='', prjDetKey='', prjTomaKey='', prjFinKey='', prjStatusKey='STATUS';
+let prjDragIdx=null, prjEdit=null;
+function prjLoad(base){ try{const s=localStorage.getItem(PRJ_KEY); if(s) return JSON.parse(s);}catch(e){} return base.map(r=>Object.assign({},r)); }
+function prjSave(){ localStorage.setItem(PRJ_KEY, JSON.stringify(PRJ)); }
+function prjColOf(c){ const s=String(c[prjStatusKey]||'').trim().toLowerCase(); return PRJ_COLS.find(x=>x.toLowerCase()===s)||'Pendiente'; }
+function prjDrag(i){ prjDragIdx=i; }
+function prjDrop(col){ if(prjDragIdx==null) return; PRJ[prjDragIdx][prjStatusKey]=col; prjDragIdx=null; prjSave(); renderPrjInto(); }
+function prjStartEdit(i){ prjEdit=i; renderPrjInto(); }
+function prjNew(){ prjEdit=-1; renderPrjInto(); }
+function prjCancel(){ prjEdit=null; renderPrjInto(); }
+function prjSaveForm(){
+  const g=id=>{ const el=PRJ_SEC.querySelector('#'+id); return el?el.value:''; };
+  const obj={};
+  if(prjProjKey) obj[prjProjKey]=g('prj-proj');
+  if(prjDetKey) obj[prjDetKey]=g('prj-det');
+  if(prjTomaKey) obj[prjTomaKey]=g('prj-toma');
+  if(prjFinKey) obj[prjFinKey]=g('prj-fin');
+  obj[prjStatusKey]=g('prj-status');
+  if(prjEdit===-1){ prjCols.forEach(k=>{ if(!(k in obj)) obj[k]=''; }); PRJ.push(obj); }
+  else Object.assign(PRJ[prjEdit], obj);
+  prjEdit=null; prjSave(); renderPrjInto();
+}
+function prjForm(){
+  const nw=prjEdit===-1; const c=nw?{}:PRJ[prjEdit];
+  const val=k=>esc(k&&c[k]!=null?c[k]:'');
+  const cur=nw?'Pendiente':prjColOf(c);
+  let h='<div class="sp-import"><b>'+(nw?'Nueva tarjeta':'Editar tarjeta')+'</b><div class="prj-form">';
+  h+='<label>Proyecto<input id="prj-proj" class="plan-in" value="'+val(prjProjKey)+'"></label>';
+  h+='<label>Detalle<input id="prj-det" class="plan-in" value="'+val(prjDetKey)+'"></label>';
+  h+='<label>Lo toma<input id="prj-toma" class="plan-in" value="'+val(prjTomaKey)+'"></label>';
+  h+='<label>Fin<input id="prj-fin" class="plan-in" value="'+val(prjFinKey)+'"></label>';
+  h+='<label>Estado<select id="prj-status" class="plan-in">'+PRJ_COLS.map(s=>'<option'+(cur===s?' selected':'')+'>'+esc(s)+'</option>').join('')+'</select></label>';
+  h+='</div><div class="plan-bar" style="margin-top:10px"><button class="btn" onclick="prjSaveForm()">Guardar</button> <button class="btn btn-ghost" onclick="prjCancel()">Cancelar</button></div></div>';
+  return h;
+}
+function renderPrjInto(){
+  const sec=PRJ_SEC; if(!sec) return;
+  let h='<h2>'+esc(PRJ_TITLE)+'</h2><div class="plan-bar"><span class="plan-spacer"></span><button class="btn" onclick="prjNew()">Nueva tarjeta</button></div>';
+  if(prjEdit!==null) h+=prjForm();
+  h+='<div class="kanban">';
+  for(const col of PRJ_COLS){
+    const items=PRJ.map((c,i)=>({c,i})).filter(x=>prjColOf(x.c)===col);
+    h+='<div class="kb-col" ondragover="event.preventDefault()" ondrop="prjDrop(\''+col+'\')"><div class="kb-head">'+esc(col)+' <span class="kb-count">'+items.length+'</span></div>';
+    for(const {c,i} of items){
+      h+='<div class="kb-card" draggable="true" ondragstart="prjDrag('+i+')"><div class="kb-title">'+esc(c[prjProjKey])+'<button class="ico" title="Editar" onclick="prjStartEdit('+i+')">&#9998;</button></div>';
+      if(prjDetKey&&c[prjDetKey]) h+='<div class="kb-det">'+esc(c[prjDetKey])+'</div>';
+      h+='<div class="kb-meta">';
+      if(prjTomaKey&&c[prjTomaKey]) h+='<span class="kb-who">'+esc(c[prjTomaKey])+'</span>';
+      if(prjFinKey&&c[prjFinKey]) h+='<span class="kb-fin">Fin: '+esc(c[prjFinKey])+'</span>';
+      h+='</div></div>';
+    }
+    if(!items.length) h+='<div class="kb-empty">Sin proyectos</div>';
+    h+='</div>';
+  }
+  sec.innerHTML=h+'</div>';
+}
+function prjInit(base, sec, title){
+  PRJ_SEC=sec; PRJ_TITLE=title; PRJ=prjLoad(base);
+  prjCols = base.length?Object.keys(base[0]):(PRJ.length?Object.keys(PRJ[0]):['PROYECTO','DETALLE','LO TOMA','FIN','STATUS']);
+  prjProjKey=prjCols.find(c=>/proyecto/i.test(c))||prjCols[0]||'PROYECTO';
+  prjDetKey=prjCols.find(c=>/detalle/i.test(c))||'';
+  prjTomaKey=prjCols.find(c=>/toma/i.test(c))||'';
+  prjFinKey=prjCols.find(c=>/fin/i.test(c))||'';
+  prjStatusKey=prjCols.find(c=>/status|estado/i.test(c))||'STATUS';
+  prjEdit=null; renderPrjInto();
 }
 async function load(tab){
   const main=document.getElementById('main');
@@ -353,6 +445,7 @@ async function load(tab){
   try{
     const res=await fetch(tab.file); const data=await res.json();
     if(tab.type==='plan'){ planInit(data, sec, tab.label); }
+    else if(tab.type==='proyectos'){ prjInit(data, sec, tab.label); }
     else if(tab.type==='mensual'){ menInit(data, sec, tab.label); }
     else if(tab.type==='solucion'){ spInit(data, sec, tab.label); }
     else {
