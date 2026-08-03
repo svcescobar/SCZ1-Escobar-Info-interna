@@ -63,14 +63,23 @@
   .kb-col { flex:1; min-width:260px; background:#f1f3f4; border:1px solid #e0e0e0; border-radius:8px; padding:10px; }
   .kb-head { font-size:13px; font-weight:600; color:#741b47; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
   .kb-count { background:#741b47; color:#fff; border-radius:10px; padding:0 7px; font-size:11px; }
-  .kb-card { background:#fff; border:1px solid #e0e0e0; border-radius:6px; padding:10px; margin-bottom:8px; cursor:grab; box-shadow:0 1px 2px rgba(0,0,0,.05); }
+  .kb-card { background:#fff; border:1px solid #e0e0e0; border-radius:6px; padding:10px; margin-bottom:8px; cursor:grab; box-shadow:0 1px 2px rgba(0,0,0,.05); position:relative; }
   .kb-card:active { cursor:grabbing; }
-  .kb-title { font-size:13px; font-weight:600; color:#202124; display:flex; justify-content:space-between; align-items:center; gap:6px; }
+  .kb-x { position:absolute; top:4px; right:5px; border:none; background:none; color:#c5221f; font-size:16px; line-height:1; cursor:pointer; opacity:0; padding:2px 5px; border-radius:4px; }
+  .kb-card:hover .kb-x { opacity:1; }
+  .kb-x:hover { background:#fce8e6; }
+  .kb-title { font-size:13px; font-weight:600; color:#202124; display:flex; justify-content:space-between; align-items:center; gap:6px; padding-right:14px; }
+  .kb-title-txt { cursor:text; }
   .kb-det { font-size:12px; color:#5f6368; margin:5px 0; }
-  .kb-meta { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
-  .kb-who { background:#efe3ea; color:#741b47; border-radius:10px; padding:1px 8px; font-size:11px; font-weight:600; }
+  .kb-meta { display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:8px; }
+  .kb-fup { border:1px solid #dadce0; color:#9aa0a6; border-radius:10px; padding:1px 8px; font-size:10px; font-weight:700; cursor:pointer; letter-spacing:.5px; }
+  .kb-fup.on { background:#fef7e0; border-color:#f0d78c; color:#b06000; }
+  .kb-avs { display:flex; gap:3px; }
+  .kb-av { width:22px; height:22px; border-radius:50%; border:1px solid #dadce0; background:#f1f3f4; color:#9aa0a6; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; cursor:pointer; }
   .kb-fin { color:#5f6368; font-size:11px; }
   .kb-empty { color:#9aa0a6; font-size:12px; text-align:center; padding:12px 0; }
+  .kb-add { width:100%; border:1px dashed #c9b3c0; background:none; color:#741b47; padding:7px; border-radius:6px; font-size:12px; cursor:pointer; margin-top:4px; }
+  .kb-add:hover { background:#f7eef3; }
   .prj-form { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px; }
   .prj-form label { display:flex; flex-direction:column; font-size:12px; color:#5f6368; gap:4px; }
 </style>
@@ -365,72 +374,94 @@ function spInit(base, sec, title){
 }
 const PRJ_KEY='scz1_proyectos';
 const PRJ_COLS=['Pendiente','En proceso','Completado'];
+const PRJ_TEAM=['SEBA','SANTI','DIEGO'];
+const PRJ_TEAM_COLOR={SEBA:'#4285f4',SANTI:'#34a853',DIEGO:'#ea4335'};
 let PRJ=[], PRJ_SEC=null, PRJ_TITLE='Proyectos SCZ1';
 let prjCols=[], prjProjKey='', prjDetKey='', prjTomaKey='', prjFinKey='', prjStatusKey='STATUS';
-let prjDragIdx=null, prjEdit=null;
+let prjDragIdx=null, prjEdit=null, prjAddCol=null, prjTitleEdit=null, prjFilterWho='';
 function prjLoad(base){ try{const s=localStorage.getItem(PRJ_KEY); if(s) return JSON.parse(s);}catch(e){} return base.map(r=>Object.assign({},r)); }
 function prjSave(){ localStorage.setItem(PRJ_KEY, JSON.stringify(PRJ)); }
 function prjColOf(c){ const s=String(c[prjStatusKey]||'').trim().toLowerCase(); return PRJ_COLS.find(x=>x.toLowerCase()===s)||'Pendiente'; }
-function prjDrag(i){ prjDragIdx=i; }
-function prjDrop(col){ if(prjDragIdx==null) return; PRJ[prjDragIdx][prjStatusKey]=col; prjDragIdx=null; prjSave(); renderPrjInto(); }
-function prjStartEdit(i){ prjEdit=i; renderPrjInto(); }
-function prjNew(){ prjEdit=-1; renderPrjInto(); }
+function prjWhoList(){ const s=[...PRJ_TEAM]; PRJ.forEach(c=>{ const w=String(c[prjTomaKey]||'').trim(); if(w&&!s.includes(w)) s.push(w); }); return s; }
+function prjInitials(p){ return String(p||'').trim().slice(0,2).toUpperCase(); }
+function prjDrag(e,i){ prjDragIdx=i; if(e.dataTransfer) e.dataTransfer.effectAllowed='move'; }
+function prjDropCol(e,col){ e.preventDefault(); if(prjDragIdx==null) return; const [it]=PRJ.splice(prjDragIdx,1); it[prjStatusKey]=col; PRJ.push(it); prjDragIdx=null; prjSave(); renderPrjInto(); }
+function prjDropCard(e,tIdx){ e.preventDefault(); if(e.stopPropagation) e.stopPropagation(); const from=prjDragIdx; prjDragIdx=null; if(from==null||from===tIdx) return; const col=prjColOf(PRJ[tIdx]); const [it]=PRJ.splice(from,1); it[prjStatusKey]=col; let t=tIdx; if(from<tIdx) t--; PRJ.splice(t,0,it); prjSave(); renderPrjInto(); }
+function prjAddStart(col){ prjAddCol=col; prjTitleEdit=null; prjEdit=null; renderPrjInto(); }
+function prjAddCancel(){ prjAddCol=null; renderPrjInto(); }
+function prjAddKey(e,col){
+  if(e.key==='Enter'){ const v=e.target.value.trim(); if(v){ const obj={}; prjCols.forEach(k=>obj[k]=''); obj[prjProjKey]=v; obj[prjStatusKey]=col; obj._fup=false; PRJ.push(obj); prjSave(); } prjAddCol=null; renderPrjInto(); }
+  else if(e.key==='Escape'){ prjAddCol=null; renderPrjInto(); }
+}
+function prjTitleStart(i){ prjTitleEdit=i; prjAddCol=null; prjEdit=null; renderPrjInto(); }
+function prjTitleKey(e,i){ if(e.key==='Enter'){ prjSaveTitle(i,e.target.value); } else if(e.key==='Escape'){ prjTitleEdit=null; renderPrjInto(); } }
+function prjSaveTitle(i,v){ if(prjTitleEdit==null) return; v=String(v).trim(); if(v) PRJ[i][prjProjKey]=v; prjTitleEdit=null; prjSave(); renderPrjInto(); }
+function prjToggleFup(i){ PRJ[i]._fup=!PRJ[i]._fup; prjSave(); renderPrjInto(); }
+function prjAssign(i,p){ const cur=String(PRJ[i][prjTomaKey]||''); PRJ[i][prjTomaKey]=(cur===p?'':p); prjSave(); renderPrjInto(); }
+function prjDelete(i){ if(!confirm('Eliminar esta tarjeta?')) return; PRJ.splice(i,1); prjSave(); renderPrjInto(); }
+function prjSetFilter(v){ prjFilterWho=v; renderPrjInto(); }
+function prjStartEdit(i){ prjEdit=i; prjAddCol=null; prjTitleEdit=null; renderPrjInto(); }
 function prjCancel(){ prjEdit=null; renderPrjInto(); }
 function prjSaveForm(){
   const g=id=>{ const el=PRJ_SEC.querySelector('#'+id); return el?el.value:''; };
-  const obj={};
-  if(prjProjKey) obj[prjProjKey]=g('prj-proj');
-  if(prjDetKey) obj[prjDetKey]=g('prj-det');
-  if(prjTomaKey) obj[prjTomaKey]=g('prj-toma');
-  if(prjFinKey) obj[prjFinKey]=g('prj-fin');
-  obj[prjStatusKey]=g('prj-status');
-  if(prjEdit===-1){ prjCols.forEach(k=>{ if(!(k in obj)) obj[k]=''; }); PRJ.push(obj); }
-  else Object.assign(PRJ[prjEdit], obj);
+  const c=PRJ[prjEdit]; if(!c) return;
+  if(prjDetKey) c[prjDetKey]=g('prj-det');
+  if(prjFinKey) c[prjFinKey]=g('prj-fin');
+  c[prjStatusKey]=g('prj-status');
   prjEdit=null; prjSave(); renderPrjInto();
 }
 function prjForm(){
-  const nw=prjEdit===-1; const c=nw?{}:PRJ[prjEdit];
+  const c=PRJ[prjEdit]; if(!c) return '';
   const val=k=>esc(k&&c[k]!=null?c[k]:'');
-  const cur=nw?'Pendiente':prjColOf(c);
-  let h='<div class="sp-import"><b>'+(nw?'Nueva tarjeta':'Editar tarjeta')+'</b><div class="prj-form">';
-  h+='<label>Proyecto<input id="prj-proj" class="plan-in" value="'+val(prjProjKey)+'"></label>';
+  let h='<div class="sp-import"><b>Editar: '+esc(c[prjProjKey])+'</b><div class="prj-form">';
   h+='<label>Detalle<input id="prj-det" class="plan-in" value="'+val(prjDetKey)+'"></label>';
-  h+='<label>Lo toma<input id="prj-toma" class="plan-in" value="'+val(prjTomaKey)+'"></label>';
   h+='<label>Fin<input id="prj-fin" class="plan-in" value="'+val(prjFinKey)+'"></label>';
-  h+='<label>Estado<select id="prj-status" class="plan-in">'+PRJ_COLS.map(s=>'<option'+(cur===s?' selected':'')+'>'+esc(s)+'</option>').join('')+'</select></label>';
+  h+='<label>Estado<select id="prj-status" class="plan-in">'+PRJ_COLS.map(s=>'<option'+(prjColOf(c)===s?' selected':'')+'>'+esc(s)+'</option>').join('')+'</select></label>';
   h+='</div><div class="plan-bar" style="margin-top:10px"><button class="btn" onclick="prjSaveForm()">Guardar</button> <button class="btn btn-ghost" onclick="prjCancel()">Cancelar</button></div></div>';
+  return h;
+}
+function prjCard(c,i){
+  let h='<div class="kb-card" draggable="true" ondragstart="prjDrag(event,'+i+')" ondragover="event.preventDefault()" ondrop="prjDropCard(event,'+i+')">';
+  h+='<button class="kb-x" title="Eliminar" onclick="prjDelete('+i+')">&times;</button>';
+  if(prjTitleEdit===i){
+    h+='<input id="prj-title-edit" class="plan-in" value="'+esc(c[prjProjKey])+'" onkeydown="prjTitleKey(event,'+i+')" onblur="prjSaveTitle('+i+',this.value)">';
+  } else {
+    h+='<div class="kb-title"><span class="kb-title-txt" ondblclick="prjTitleStart('+i+')">'+esc(c[prjProjKey])+'</span><button class="ico" title="Editar detalle/fin" onclick="prjStartEdit('+i+')">&#9998;</button></div>';
+  }
+  if(prjDetKey&&c[prjDetKey]) h+='<div class="kb-det">'+esc(c[prjDetKey])+'</div>';
+  h+='<div class="kb-meta"><span class="kb-fup'+(c._fup?' on':'')+'" onclick="prjToggleFup('+i+')" title="Follow-up">FUP</span>';
+  h+='<span class="kb-avs">'+PRJ_TEAM.map(p=>{ const on=String(c[prjTomaKey]||'')===p; return '<span class="kb-av'+(on?' on':'')+'" style="'+(on?'background:'+PRJ_TEAM_COLOR[p]+';border-color:'+PRJ_TEAM_COLOR[p]+';color:#fff':'')+'" title="'+esc(p)+'" onclick="prjAssign('+i+',\''+p+'\')">'+prjInitials(p)+'</span>'; }).join('')+'</span>';
+  if(prjFinKey&&c[prjFinKey]) h+='<span class="kb-fin">Fin: '+esc(c[prjFinKey])+'</span>';
+  h+='</div></div>';
   return h;
 }
 function renderPrjInto(){
   const sec=PRJ_SEC; if(!sec) return;
-  let h='<h2>'+esc(PRJ_TITLE)+'</h2><div class="plan-bar"><span class="plan-spacer"></span><button class="btn" onclick="prjNew()">Nueva tarjeta</button></div>';
+  let h='<h2>'+esc(PRJ_TITLE)+'</h2><div class="plan-bar"><label>Persona <select onchange="prjSetFilter(this.value)"><option value="">Todas</option>'+prjWhoList().map(w=>'<option'+(prjFilterWho===w?' selected':'')+'>'+esc(w)+'</option>').join('')+'</select></label></div>';
   if(prjEdit!==null) h+=prjForm();
   h+='<div class="kanban">';
   for(const col of PRJ_COLS){
-    const items=PRJ.map((c,i)=>({c,i})).filter(x=>prjColOf(x.c)===col);
-    h+='<div class="kb-col" ondragover="event.preventDefault()" ondrop="prjDrop(\''+col+'\')"><div class="kb-head">'+esc(col)+' <span class="kb-count">'+items.length+'</span></div>';
-    for(const {c,i} of items){
-      h+='<div class="kb-card" draggable="true" ondragstart="prjDrag('+i+')"><div class="kb-title">'+esc(c[prjProjKey])+'<button class="ico" title="Editar" onclick="prjStartEdit('+i+')">&#9998;</button></div>';
-      if(prjDetKey&&c[prjDetKey]) h+='<div class="kb-det">'+esc(c[prjDetKey])+'</div>';
-      h+='<div class="kb-meta">';
-      if(prjTomaKey&&c[prjTomaKey]) h+='<span class="kb-who">'+esc(c[prjTomaKey])+'</span>';
-      if(prjFinKey&&c[prjFinKey]) h+='<span class="kb-fin">Fin: '+esc(c[prjFinKey])+'</span>';
-      h+='</div></div>';
-    }
-    if(!items.length) h+='<div class="kb-empty">Sin proyectos</div>';
+    const items=PRJ.map((c,i)=>({c,i})).filter(x=>prjColOf(x.c)===col&&(!prjFilterWho||String(x.c[prjTomaKey]||'')===prjFilterWho));
+    h+='<div class="kb-col" ondragover="event.preventDefault()" ondrop="prjDropCol(event,\''+col+'\')"><div class="kb-head">'+esc(col)+' <span class="kb-count">'+items.length+'</span></div>';
+    for(const {c,i} of items) h+=prjCard(c,i);
+    if(prjAddCol===col) h+='<input id="prj-add-input" class="plan-in" placeholder="T\u00edtulo del proyecto..." onkeydown="prjAddKey(event,\''+col+'\')" onblur="prjAddCancel()">';
+    else h+='<button class="kb-add" onclick="prjAddStart(\''+col+'\')">+ Agregar tarea</button>';
     h+='</div>';
   }
   sec.innerHTML=h+'</div>';
+  const fa=sec.querySelector('#prj-add-input'); if(fa) fa.focus();
+  const ft=sec.querySelector('#prj-title-edit'); if(ft){ ft.focus(); ft.select(); }
 }
 function prjInit(base, sec, title){
   PRJ_SEC=sec; PRJ_TITLE=title; PRJ=prjLoad(base);
   prjCols = base.length?Object.keys(base[0]):(PRJ.length?Object.keys(PRJ[0]):['PROYECTO','DETALLE','LO TOMA','FIN','STATUS']);
   prjProjKey=prjCols.find(c=>/proyecto/i.test(c))||prjCols[0]||'PROYECTO';
   prjDetKey=prjCols.find(c=>/detalle/i.test(c))||'';
-  prjTomaKey=prjCols.find(c=>/toma/i.test(c))||'';
+  prjTomaKey=prjCols.find(c=>/toma/i.test(c))||'LO TOMA';
   prjFinKey=prjCols.find(c=>/fin/i.test(c))||'';
   prjStatusKey=prjCols.find(c=>/status|estado/i.test(c))||'STATUS';
-  prjEdit=null; renderPrjInto();
+  prjEdit=null; prjAddCol=null; prjTitleEdit=null; prjFilterWho='';
+  renderPrjInto();
 }
 async function load(tab){
   const main=document.getElementById('main');
