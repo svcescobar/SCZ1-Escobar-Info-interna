@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SCZ1 Escobar - Info Interna</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', Roboto, Arial, sans-serif; background:#f4f5f7; color:#202124; }
@@ -719,20 +720,41 @@ function ocAnalysis(){
 }
 function ocAnalysisHTML(){
   const {byTipo,byMes}=ocAnalysis();
-  let h='<h3 style="color:#741b47;margin:0 0 10px">Costo total por Tipo</h3><div class="card"><table><thead><tr><th>Tipo</th><th>Costo total</th></tr></thead><tbody>';
   const tipos=Object.keys(byTipo).sort((a,b)=>byTipo[b]-byTipo[a]);
-  if(!tipos.length) h+='<tr><td colspan="2" class="empty">Sin datos.</td></tr>';
+  const meses=Object.keys(byMes);
   const totT=tipos.reduce((s,t)=>s+byTipo[t],0);
+  const totM=meses.reduce((s,m)=>s+byMes[m],0);
+  const COLORS=['#741b47','#4285f4','#34a853','#fbbc04','#ea4335','#ff6d01','#9c27b0','#00897b'];
+  let h='<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">';
+  h+='<div class="card" style="padding:16px"><b style="font-size:13px;color:#741b47">Costo por Tipo</b><canvas id="oc-chart-tipo" height="220"></canvas></div>';
+  h+='<div class="card" style="padding:16px"><b style="font-size:13px;color:#741b47">Costo por Mes</b><canvas id="oc-chart-mes" height="220"></canvas></div>';
+  h+='</div>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">';
+  h+='<div><h3 style="color:#741b47;margin:0 0 10px">Por Tipo</h3><div class="card"><table><thead><tr><th>Tipo</th><th>Costo total</th></tr></thead><tbody>';
+  if(!tipos.length) h+='<tr><td colspan="2" class="empty">Sin datos.</td></tr>';
   for(const t of tipos) h+='<tr><td>'+esc(t)+'</td><td>$'+byTipo[t].toLocaleString('es-AR',{minimumFractionDigits:2})+'</td></tr>';
   if(tipos.length) h+='<tr style="font-weight:600;background:#f8f9fa"><td>Total</td><td>$'+totT.toLocaleString('es-AR',{minimumFractionDigits:2})+'</td></tr>';
-  h+='</tbody></table></div>';
-  h+='<h3 style="color:#741b47;margin:20px 0 10px">Costo total por Mes (fecha de creación)</h3><div class="card"><table><thead><tr><th>Mes</th><th>Costo total</th></tr></thead><tbody>';
-  const meses=Object.keys(byMes);
+  h+='</tbody></table></div></div>';
+  h+='<div><h3 style="color:#741b47;margin:0 0 10px">Por Mes (fecha creación)</h3><div class="card"><table><thead><tr><th>Mes</th><th>Costo total</th></tr></thead><tbody>';
   if(!meses.length) h+='<tr><td colspan="2" class="empty">Sin datos.</td></tr>';
-  const totM=meses.reduce((s,m)=>s+byMes[m],0);
   for(const m of meses) h+='<tr><td>'+esc(m)+'</td><td>$'+byMes[m].toLocaleString('es-AR',{minimumFractionDigits:2})+'</td></tr>';
   if(meses.length) h+='<tr style="font-weight:600;background:#f8f9fa"><td>Total</td><td>$'+totM.toLocaleString('es-AR',{minimumFractionDigits:2})+'</td></tr>';
-  return h+'</tbody></table></div>';
+  h+='</tbody></table></div></div>';
+  h+='</div>';
+  return h;
+}
+function ocDrawCharts(){
+  const {byTipo,byMes}=ocAnalysis();
+  const COLORS=['#741b47','#4285f4','#34a853','#fbbc04','#ea4335','#ff6d01','#9c27b0','#00897b'];
+  const opts={responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'$'+ctx.parsed.x.toLocaleString('es-AR',{minimumFractionDigits:2})}}},scales:{x:{ticks:{callback:v=>'$'+v.toLocaleString('es-AR')}}}};
+  const optsV={responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'$'+ctx.parsed.y.toLocaleString('es-AR',{minimumFractionDigits:2})}}},scales:{y:{ticks:{callback:v=>'$'+v.toLocaleString('es-AR')}}}};
+  ['oc-ch-tipo','oc-ch-mes'].forEach(id=>{ const old=Chart.getChart(id); if(old) old.destroy(); });
+  const ct=document.getElementById('oc-chart-tipo'); const cm=document.getElementById('oc-chart-mes');
+  if(!ct||!cm) return;
+  const tipos=Object.keys(byTipo).sort((a,b)=>byTipo[b]-byTipo[a]);
+  new Chart(ct,{id:'oc-ch-tipo',type:'bar',data:{labels:tipos,datasets:[{data:tipos.map(t=>byTipo[t]),backgroundColor:tipos.map((_,i)=>COLORS[i%COLORS.length]),borderRadius:4}]},options:{...opts,indexAxis:'y'}});
+  const meses=Object.keys(byMes);
+  new Chart(cm,{id:'oc-ch-mes',type:'bar',data:{labels:meses,datasets:[{data:meses.map(m=>byMes[m]),backgroundColor:COLORS[0],borderRadius:4}]},options:optsV});
 }
 function ocSetSubTab(t){ ocSubTab=t; ocEdit=null; renderOcInto(); }
 function ocRows(){ return ocFilter?OC.filter(r=>r.estado===ocFilter):OC; }
@@ -763,7 +785,7 @@ function renderOcInto(){
   h+='<button onclick="ocSetSubTab(\'ocs\')" style="border:none;background:none;padding:9px 18px;font-size:13px;cursor:pointer;border-bottom:'+(stOcs?'3px solid #741b47':'3px solid transparent')+';color:'+(stOcs?'#741b47':'#444')+';font-weight:'+(stOcs?'600':'400')+'">OCs</button>';
   h+='<button onclick="ocSetSubTab(\'analisis\')" style="border:none;background:none;padding:9px 18px;font-size:13px;cursor:pointer;border-bottom:'+(stAn?'3px solid #741b47':'3px solid transparent')+';color:'+(stAn?'#741b47':'#444')+';font-weight:'+(stAn?'600':'400')+'">Análisis</button>';
   h+='</div>';
-  if(stAn){ sec.innerHTML=h+ocAnalysisHTML(); return; }
+  if(stAn){ sec.innerHTML=h+ocAnalysisHTML(); setTimeout(ocDrawCharts,0); return; }
   h+='<div class="plan-bar"><label>Estado <select onchange="ocSetFilter(this.value)"><option value="">Todos</option>'+OC_ESTADOS.map(s=>'<option'+(ocFilter===s?' selected':'')+'>'+esc(s)+'</option>').join('')+'</select></label><span class="plan-spacer"></span><button class="btn" onclick="ocNew()">+ Nueva OC</button></div>';
   if(ocEdit!==null) h+=ocForm(ocEdit);
   h+='<div class="card" style="overflow-x:auto"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Descripción</th><th>Formulario</th><th>Nro OC</th><th>Pos.</th><th>Costo unit.</th><th>Costo total</th><th>Orden Int.</th><th>Responsable</th><th>Estado</th><th>Fecha rec.</th><th>Factura</th><th>Acciones</th></tr></thead><tbody>';
