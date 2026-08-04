@@ -30,6 +30,7 @@
   .b-yellow { background:#fef7e0; color:#b06000; }
   .b-grey { background:#f1f3f4; color:#5f6368; }
   .b-red { background:#fce8e6; color:#c5221f; }
+  .b-blue { background:#e8f0fe; color:#1a73e8; }
   .moki { background:#fff; border:1px solid #e0e0e0; border-left:4px solid #741b47; border-radius:8px; padding:16px 18px; margin-bottom:20px; }
   .moki h3 { font-size:15px; margin-bottom:10px; }
   .moki .row { font-size:13px; margin:5px 0; }
@@ -104,7 +105,14 @@ const TABS = [
   {id:'onway', label:'On Way', color:'#ff6d01', file:'data/on-way.json', type:'onway'},
   {id:'estacion', label:'Estacion Errada', color:'#ea4335', file:'data/estacion-errada.json', type:'estacion'},
   {id:'avisos', label:'Avisos de Riesgo', color:'#9c27b0', file:'data/avisos-riesgo.json', type:'avisos'},
+  {id:'oc', label:'Ordenes de compra', color:'#00897b', file:'data/ordenes-compra.json', type:'oc'},
 ];
+function ocBadge(v){
+  const s=String(v||'').trim();
+  const map={'Recepcionada':'b-green','Recepcionada Parcial':'b-yellow','Creada':'b-grey','En Aprobación':'b-yellow','Contrato Marco':'b-blue','Pendiente de Recepción':'b-yellow','Cancelada-Eliminada':'b-red'};
+  const cls=map[s]||'b-grey';
+  return '<span class="badge '+cls+'">'+esc(s)+'</span>';
+}
 function badge(v){
   const s=String(v).toLowerCase().trim();
   if(s==='completado'||s==='true') return '<span class="badge b-green">'+(s==='true'?'Si':'Completado')+'</span>';
@@ -640,6 +648,86 @@ function renderEeInto(){
   h+='<div style="margin-top:8px"><button class="btn" onclick="eeCopyWpp()">Copiar mensaje</button></div>';
   sec.innerHTML=h;
 }
+const OC_KEY='scz1_oc';
+const OC_ESTADOS=['Creada','En Aprobación','Contrato Marco','Pendiente de Recepción','Recepcionada','Recepcionada Parcial','Cancelada-Eliminada'];
+const OC_FIELDS=[
+  {k:'fecha',label:'Fecha de creación',type:'text',ph:'dd/mm/aaaa'},
+  {k:'descripcion',label:'Descripción de la OC',type:'text',ph:'Descripción',wide:true},
+  {k:'formulario',label:'Formulario',type:'text',ph:'Nro formulario'},
+  {k:'nroOC',label:'Número de OC',type:'text',ph:'Nro OC'},
+  {k:'posiciones',label:'Posiciones',type:'text',ph:'Cant.'},
+  {k:'costoUnitario',label:'Costo unitario',type:'text',ph:'$0'},
+  {k:'costoTotal',label:'Costo total',type:'text',ph:'$0'},
+  {k:'ordenInterna',label:'Orden Interna',type:'text',ph:'SBU1'},
+  {k:'responsable',label:'Responsable',type:'text',ph:'Nombre'},
+  {k:'estado',label:'Estado',type:'select'},
+  {k:'fechaRecepcion',label:'Fecha recepción',type:'text',ph:'dd/mm/aaaa'},
+  {k:'factura',label:'Archivo factura',type:'file'}
+];
+let OC=[], OC_SEC=null, OC_TITLE='Ordenes de compra', ocEdit=null, ocFilter='';
+function ocLoad(){ try{const s=localStorage.getItem(OC_KEY); return s?JSON.parse(s):null;}catch(e){return null;} }
+function ocSave(){ localStorage.setItem(OC_KEY, JSON.stringify(OC)); }
+function ocInit(base, sec, title){
+  OC_SEC=sec; OC_TITLE=title;
+  const st=ocLoad();
+  if(st){ OC=st; }
+  else { OC=(Array.isArray(base)?base:[]).map(r=>{ const o={factura:'',facturaName:''}; OC_FIELDS.forEach(f=>o[f.k]=String(r[f.k]||r[f.label]||'')); return o; }); }
+  ocEdit=null; ocFilter=''; ocSave(); renderOcInto();
+}
+function ocNew(){ const o={factura:'',facturaName:''}; OC_FIELDS.forEach(f=>o[f.k]=''); OC.push(o); ocEdit=OC.length-1; ocSave(); renderOcInto(); }
+function ocStartEdit(i){ ocEdit=i; renderOcInto(); }
+function ocCancel(){ if(ocEdit!==null&&OC[ocEdit]&&!OC[ocEdit].descripcion&&!OC[ocEdit].nroOC) OC.splice(ocEdit,1); ocEdit=null; ocSave(); renderOcInto(); }
+function ocSaveForm(){
+  const g=id=>{ const el=OC_SEC.querySelector('#oc-'+id); return el?el.value:''; };
+  const r=OC[ocEdit]; if(!r) return;
+  OC_FIELDS.filter(f=>f.type!=='file').forEach(f=>r[f.k]=g(f.k));
+  ocEdit=null; ocSave(); renderOcInto();
+}
+function ocDelete(i){ if(!confirm('Eliminar esta OC?')) return; OC.splice(i,1); ocEdit=null; ocSave(); renderOcInto(); }
+function ocAttach(i, input){
+  const f=input.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ OC[i].factura=rd.result; OC[i].facturaName=f.name; ocSave(); renderOcInto(); };
+  rd.readAsDataURL(f);
+}
+function ocDownload(i){
+  const r=OC[i]; if(!r||!r.factura) return;
+  const a=document.createElement('a'); a.href=r.factura; a.download=r.facturaName||'factura.pdf'; a.click();
+}
+function ocSetFilter(v){ ocFilter=v; renderOcInto(); }
+function ocRows(){ return ocFilter?OC.filter(r=>r.estado===ocFilter):OC; }
+function ocForm(i){
+  const r=OC[i];
+  let h='<div class="sp-import"><b>'+(r.nroOC?'Editar OC '+esc(r.nroOC):'Nueva Orden de Compra')+'</b><div class="prj-form" style="grid-template-columns:1fr 1fr 1fr">';
+  OC_FIELDS.forEach(f=>{
+    if(f.type==='file') return;
+    const wide=f.wide?'grid-column:1/-1':'';
+    const v=esc(r[f.k]||'');
+    if(f.type==='select') h+='<label style="'+wide+'">'+f.label+'<select id="oc-'+f.k+'" class="plan-in">'+OC_ESTADOS.map(s=>'<option'+(r[f.k]===s?' selected':'')+'>'+esc(s)+'</option>').join('')+'</select></label>';
+    else h+='<label style="'+wide+'">'+f.label+'<input id="oc-'+f.k+'" class="plan-in" value="'+v+'" placeholder="'+(f.ph?esc(f.ph):'')+'"></label>';
+  });
+  h+='<label style="grid-column:1/-1">Factura PDF<div style="display:flex;gap:8px;align-items:center;margin-top:4px">';
+  if(r.factura) h+='<span class="badge b-green">'+esc(r.facturaName||'adjunto')+'</span><button class="btn btn-ghost btn-sm" type="button" onclick="ocDownload('+i+')">Descargar</button>';
+  h+='<label class="btn btn-ghost btn-sm" style="cursor:pointer">'+( r.factura?'Reemplazar':'Adjuntar PDF')+'<input type="file" accept="application/pdf" style="display:none" onchange="ocAttach('+i+',this)"></label>';
+  h+='</div></label>';
+  h+='</div><div class="plan-bar" style="margin-top:10px"><button class="btn" onclick="ocSaveForm()">Guardar</button> <button class="btn btn-ghost" onclick="ocCancel()">Cancelar</button></div></div>';
+  return h;
+}
+function renderOcInto(){
+  const sec=OC_SEC; if(!sec) return;
+  const rows=ocRows();
+  let h='<h2>'+esc(OC_TITLE)+'</h2><div class="plan-bar"><label>Estado <select onchange="ocSetFilter(this.value)"><option value="">Todos</option>'+OC_ESTADOS.map(s=>'<option'+(ocFilter===s?' selected':'')+'>'+esc(s)+'</option>').join('')+'</select></label><span class="plan-spacer"></span><button class="btn" onclick="ocNew()">+ Nueva OC</button></div>';
+  if(ocEdit!==null) h+=ocForm(ocEdit);
+  h+='<div class="card" style="overflow-x:auto"><table><thead><tr><th>Fecha</th><th>Descripción</th><th>Formulario</th><th>Nro OC</th><th>Pos.</th><th>Costo unit.</th><th>Costo total</th><th>Orden Int.</th><th>Responsable</th><th>Estado</th><th>Fecha rec.</th><th>Factura</th><th>Acciones</th></tr></thead><tbody>';
+  if(!rows.length) h+='<tr><td colspan="13" class="empty">Sin \u00f3rdenes de compra.</td></tr>';
+  for(const r of rows){
+    const i=OC.indexOf(r);
+    h+='<tr><td>'+esc(r.fecha)+'</td><td>'+esc(r.descripcion)+'</td><td>'+esc(r.formulario)+'</td><td>'+esc(r.nroOC)+'</td><td>'+esc(r.posiciones)+'</td><td>'+esc(r.costoUnitario)+'</td><td>'+esc(r.costoTotal)+'</td><td>'+esc(r.ordenInterna)+'</td><td>'+esc(r.responsable)+'</td><td>'+ocBadge(r.estado)+'</td><td>'+esc(r.fechaRecepcion)+'</td>';
+    h+='<td>'+(r.factura?'<button class="btn btn-ghost btn-sm" onclick="ocDownload('+i+')">&#8595; '+esc(r.facturaName||'PDF')+'</button>':'<span class="muted">&mdash;</span>')+'</td>';
+    h+='<td class="plan-act"><button class="ico" title="Editar" onclick="ocStartEdit('+i+')">&#9998;</button> <button class="ico ico-del" title="Eliminar" onclick="ocDelete('+i+')">&#128465;</button></td></tr>';
+  }
+  sec.innerHTML=h+'</tbody></table></div>';
+}
 async function load(tab){
   const main=document.getElementById('main');
   let sec=document.getElementById('sec-'+tab.id);
@@ -658,6 +746,7 @@ async function load(tab){
     else if(tab.type==='solucion'){ spInit(data, sec, tab.label); }
     else if(tab.type==='onway'){ owInit(data, sec, tab.label); }
     else if(tab.type==='estacion'){ eeInit(data, sec, tab.label); }
+    else if(tab.type==='oc'){ ocInit(data, sec, tab.label); }
     else {
       let body='';
       if(tab.type==='avisos') body=renderAvisos(data);
