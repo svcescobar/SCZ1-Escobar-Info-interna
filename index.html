@@ -101,7 +101,7 @@ const TABS = [
   {id:'proyectos', label:'Proyectos SCZ1', color:'#34a853', file:'data/proyectos.json', type:'proyectos'},
   {id:'mensual', label:'Mensual Operativa', color:'#741b47', file:'data/mensual-operativa.json', type:'mensual'},
   {id:'solucion', label:'Solucion de problemas', color:'#fbbc04', file:'data/solucion-problemas.json', type:'solucion'},
-  {id:'onway', label:'On Way', color:'#ff6d01', file:'data/on-way.json', type:'table'},
+  {id:'onway', label:'On Way', color:'#ff6d01', file:'data/on-way.json', type:'onway'},
   {id:'estacion', label:'Estacion Errada', color:'#ea4335', file:'data/estacion-errada.json', type:'table'},
   {id:'avisos', label:'Avisos de Riesgo', color:'#9c27b0', file:'data/avisos-riesgo.json', type:'avisos'},
 ];
@@ -463,6 +463,102 @@ function prjInit(base, sec, title){
   prjEdit=null; prjAddCol=null; prjTitleEdit=null; prjFilterWho='';
   renderPrjInto();
 }
+const OW_KEY='scz1_onway';
+let OW_ROWS=[], OW_META={}, OW_SEC=null, OW_TITLE='On Way';
+function owLoad(){ try{const s=localStorage.getItem(OW_KEY); return s?JSON.parse(s):null;}catch(e){return null;} }
+function owSave(){ localStorage.setItem(OW_KEY, JSON.stringify({meta:OW_META})); }
+function owNorm(r){
+  const g=re=>{ for(const k in r){ if(re.test(k)) return String(r[k]!=null?r[k]:''); } return ''; };
+  return {
+    svc:g(/^svc$/i), hub:g(/^hub$/i),
+    id:g(/shipment_id/i)||g(/^id$/i),
+    status:g(/^status$/i)||g(/sub.?status/i),
+    destino:g(/destino/i),
+    lastStatus:g(/last.?status/i)||g(/fecha/i),
+    descripcion:g(/descripcion/i),
+    usd:g(/usd/i)||g(/dolar/i)
+  };
+}
+function owParseCSV(text){
+  const rows=[]; let i=0,f='',row=[],q=false;
+  while(i<text.length){ const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){f+='"';i+=2;continue;} q=false;i++;continue;} f+=c;i++;continue; }
+    if(c==='"'){q=true;i++;continue;}
+    if(c===','){row.push(f);f='';i++;continue;}
+    if(c==='\r'){i++;continue;}
+    if(c==='\n'){row.push(f);rows.push(row);row=[];f='';i++;continue;}
+    f+=c;i++;
+  }
+  if(f!==''||row.length){row.push(f);rows.push(row);}
+  return rows;
+}
+function owParse(text){
+  text=text.trim(); if(!text) return [];
+  if(text[0]==='[') return JSON.parse(text);
+  if(text[0]==='{') return text.split(/\r?\n/).filter(l=>l.trim()).map(l=>JSON.parse(l));
+  const rows=owParseCSV(text); if(rows.length<2) return [];
+  const hdr=rows[0].map(h=>h.trim());
+  return rows.slice(1).filter(r=>r.some(c=>c!=='')).map(r=>{ const o={}; hdr.forEach((h,j)=>o[h]=r[j]!=null?r[j]:''); return o; });
+}
+function owApplyBase(list){
+  OW_ROWS=(Array.isArray(list)?list:[]).map(owNorm).filter(x=>x.id);
+  OW_ROWS.forEach(r=>{ if(!OW_META[r.id]) OW_META[r.id]={obs:'',lostear:false,resuelto:false,fecha:''}; });
+  const ids=new Set(OW_ROWS.map(r=>r.id));
+  Object.keys(OW_META).forEach(k=>{ if(!ids.has(k)) delete OW_META[k]; });
+}
+function owImport(text){
+  let raw; try{raw=owParse(text);}catch(e){alert('No pude parsear. Verificá que sea JSON o CSV válido.');return;}
+  if(!raw||!raw.length){alert('No se detectaron filas.');return;}
+  const incoming=raw.map(owNorm).filter(x=>x.id);
+  if(!incoming.length){alert('No encontré columna ID.');return;}
+  const prevMeta=Object.assign({},OW_META);
+  OW_ROWS=incoming;
+  OW_ROWS.forEach(r=>{ OW_META[r.id]=prevMeta[r.id]||{obs:'',lostear:false,resuelto:false,fecha:''}; });
+  const ids=new Set(OW_ROWS.map(r=>r.id));
+  Object.keys(OW_META).forEach(k=>{ if(!ids.has(k)) delete OW_META[k]; });
+  owSave(); renderOwInto();
+  alert(OW_ROWS.length+' filas cargadas.');
+}
+function owFile(input){ const f=input.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{owImport(rd.result);input.value=''}; rd.readAsText(f); }
+function owSetObs(id,v){ if(!OW_META[id]) OW_META[id]={obs:'',lostear:false,resuelto:false,fecha:''}; OW_META[id].obs=v; owSave(); }
+function owToggleLostear(id){
+  if(!OW_META[id]) OW_META[id]={obs:'',lostear:false,resuelto:false,fecha:''};
+  OW_META[id].lostear=!OW_META[id].lostear;
+  if(!OW_META[id].lostear){ OW_META[id].resuelto=false; OW_META[id].fecha=''; }
+  owSave(); renderOwInto();
+}
+function owToggleResuelto(id){
+  if(!OW_META[id]) OW_META[id]={obs:'',lostear:false,resuelto:false,fecha:''};
+  if(!OW_META[id].lostear) return;
+  OW_META[id].resuelto=!OW_META[id].resuelto;
+  OW_META[id].fecha=OW_META[id].resuelto?new Date().toISOString().slice(0,10):'';
+  owSave(); renderOwInto();
+}
+function owUsd(v){ if(!v) return '<span class="muted">&mdash;</span>'; const c=String(v).replace(/[^0-9.,]/g,'').replace(',','.'); const n=parseFloat(c); return isNaN(n)?esc(v):'$'+n.toFixed(2); }
+function renderOwInto(){
+  const sec=OW_SEC; if(!sec) return;
+  let h='<h2>'+esc(OW_TITLE)+'</h2>';
+  h+='<div class="sp-import"><b>Actualizar desde la query</b><div class="muted" style="margin:4px 0 8px">Peg\u00e1 el resultado de la query (JSON, NDJSON o CSV) o sub\u00ed el archivo. Merge por ID: se conservan observaciones, losteos y resueltos de los que siguen.</div>';
+  h+='<textarea id="ow-paste" class="sp-ta" placeholder="Peg\u00e1 JSON o CSV..."></textarea>';
+  h+='<div class="plan-bar" style="margin-top:8px"><button class="btn" onclick="owImport(document.getElementById(\'ow-paste\').value)">Importar</button><label class="btn btn-ghost" style="cursor:pointer">Subir archivo<input type="file" accept=".json,.csv,.txt" style="display:none" onchange="owFile(this)"></label></div></div>';
+  if(!OW_ROWS.length){ sec.innerHTML=h+'<div class="empty">Sin filas. Import\u00e1 el resultado de la query.</div>'; return; }
+  h+='<div class="card"><table><thead><tr><th>SVC</th><th>HUB</th><th>ID</th><th>Status</th><th>Destino</th><th>Last Status</th><th>Descripcion</th><th>USD</th><th>Observaci\u00f3n</th><th>Lostear</th><th>Resuelto</th><th>Fecha losteo</th></tr></thead><tbody>';
+  for(const r of OW_ROWS){
+    const m=OW_META[r.id]||{obs:'',lostear:false,resuelto:false,fecha:''};
+    h+='<tr'+(m.resuelto?' style="opacity:.55"':m.lostear?' style="background:#fef7e0"':'')+'>'; 
+    h+='<td>'+esc(r.svc)+'</td><td>'+esc(r.hub)+'</td><td>'+esc(r.id)+'</td><td>'+badge(r.status)+'</td><td>'+esc(r.destino)+'</td><td>'+esc(r.lastStatus)+'</td><td>'+esc(r.descripcion)+'</td><td>'+owUsd(r.usd)+'</td>';
+    h+='<td><input class="plan-in" value="'+esc(m.obs)+'" onchange="owSetObs(\''+esc(r.id)+'\',this.value)"></td>';
+    h+='<td style="text-align:center"><span class="chk'+(m.lostear?' on':'')+'" onclick="owToggleLostear(\''+esc(r.id)+'\')">'+(m.lostear?'&#10003;':'')+'</span></td>';
+    h+='<td style="text-align:center"><span class="chk'+(m.resuelto?' on':'')+(m.lostear?'':' muted"')+'" '+(m.lostear?'onclick="owToggleResuelto(\''+esc(r.id)+'\')"':'style="cursor:default"')+'>'+(m.resuelto?'&#10003;':'')+'</span></td>';
+    h+='<td>'+esc(m.fecha||'')+'</td></tr>';
+  }
+  sec.innerHTML=h+'</tbody></table></div>';
+}
+function owInit(base, sec, title){
+  OW_SEC=sec; OW_TITLE=title;
+  const st=owLoad(); OW_META=(st&&st.meta)||{};
+  owApplyBase(base); owSave(); renderOwInto();
+}
 async function load(tab){
   const main=document.getElementById('main');
   let sec=document.getElementById('sec-'+tab.id);
@@ -479,6 +575,7 @@ async function load(tab){
     else if(tab.type==='proyectos'){ prjInit(data, sec, tab.label); }
     else if(tab.type==='mensual'){ menInit(data, sec, tab.label); }
     else if(tab.type==='solucion'){ spInit(data, sec, tab.label); }
+    else if(tab.type==='onway'){ owInit(data, sec, tab.label); }
     else {
       let body='';
       if(tab.type==='avisos') body=renderAvisos(data);
