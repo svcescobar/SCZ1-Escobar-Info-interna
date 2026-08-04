@@ -534,7 +534,34 @@ function owToggleResuelto(id){
   OW_META[id].fecha=OW_META[id].resuelto?new Date().toISOString().slice(0,10):'';
   owSave(); renderOwInto();
 }
+function owIsoWeek(dateStr){
+  const d=new Date(dateStr); if(isNaN(d)) return null;
+  const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  t.setUTCDate(t.getUTCDate()+4-(t.getUTCDay()||7));
+  const y=t.getUTCFullYear(); const w=Math.ceil(((t-new Date(Date.UTC(y,0,1)))/86400000+1)/7);
+  return 'W'+String(w).padStart(2,'0')+' '+y;
+}
+function owWeeklySummary(){
+  const map={};
+  for(const r of OW_ROWS){
+    const m=OW_META[r.id]; if(!m||!m.resuelto||!m.fecha) continue;
+    const wk=owIsoWeek(m.fecha); if(!wk) continue;
+    if(!map[wk]) map[wk]={usd:0,count:0};
+    const n=parseFloat(String(r.usd).replace(/[^0-9.,]/g,'').replace(',','.')); 
+    map[wk].usd+=(isNaN(n)?0:n); map[wk].count++;
+  }
+  return map;
+}
 function owUsd(v){ if(!v) return '<span class="muted">&mdash;</span>'; const c=String(v).replace(/[^0-9.,]/g,'').replace(',','.'); const n=parseFloat(c); return isNaN(n)?esc(v):'$'+n.toFixed(2); }
+function owSummaryBlock(){
+  const map=owWeeklySummary(); const weeks=Object.keys(map).sort();
+  if(!weeks.length) return '';
+  let h='<h3 style="color:#741b47;margin:20px 0 8px">Resueltos por semana</h3><div class="card"><table><thead><tr><th>Semana</th><th>IDs resueltos</th><th>USD total</th></tr></thead><tbody>';
+  for(const w of weeks) h+='<tr><td><b>'+esc(w)+'</b></td><td>'+map[w].count+'</td><td>$'+map[w].usd.toFixed(2)+'</td></tr>';
+  const tot=weeks.reduce((s,w)=>s+map[w].usd,0), totc=weeks.reduce((s,w)=>s+map[w].count,0);
+  h+='<tr style="font-weight:600;background:#f8f9fa"><td>Total</td><td>'+totc+'</td><td>$'+tot.toFixed(2)+'</td></tr>';
+  return h+'</tbody></table></div>';
+}
 function renderOwInto(){
   const sec=OW_SEC; if(!sec) return;
   let h='<h2>'+esc(OW_TITLE)+'</h2>';
@@ -552,7 +579,7 @@ function renderOwInto(){
     h+='<td style="text-align:center"><span class="chk'+(m.resuelto?' on':'')+(m.lostear?'':' muted"')+'" '+(m.lostear?'onclick="owToggleResuelto(\''+esc(r.id)+'\')"':'style="cursor:default"')+'>'+(m.resuelto?'&#10003;':'')+'</span></td>';
     h+='<td>'+esc(m.fecha||'')+'</td></tr>';
   }
-  sec.innerHTML=h+'</tbody></table></div>';
+  sec.innerHTML=h+'</tbody></table></div>'+owSummaryBlock();
 }
 function owInit(base, sec, title){
   OW_SEC=sec; OW_TITLE=title;
