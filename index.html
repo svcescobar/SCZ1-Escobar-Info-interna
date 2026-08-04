@@ -649,9 +649,11 @@ function renderEeInto(){
   sec.innerHTML=h;
 }
 const OC_KEY='scz1_oc';
+const OC_TIPOS=['Pago Alquiler','Pago Expensas','Pago Boss','Compra Bioseif','Compra Ofidirect','Compra Marken','Otros'];
 const OC_ESTADOS=['Creada','En Aprobación','Contrato Marco','Pendiente de Recepción','Recepcionada','Recepcionada Parcial','Cancelada-Eliminada'];
 const OC_FIELDS=[
   {k:'fecha',label:'Fecha de creación',type:'text',ph:'dd/mm/aaaa'},
+  {k:'tipo',label:'Tipo',type:'select-tipo'},
   {k:'descripcion',label:'Descripción de la OC',type:'text',ph:'Descripción',wide:true},
   {k:'formulario',label:'Formulario',type:'text',ph:'Nro formulario'},
   {k:'nroOC',label:'Número de OC',type:'text',ph:'Nro OC'},
@@ -664,7 +666,7 @@ const OC_FIELDS=[
   {k:'fechaRecepcion',label:'Fecha recepción',type:'text',ph:'dd/mm/aaaa'},
   {k:'factura',label:'Archivo factura',type:'file'}
 ];
-let OC=[], OC_SEC=null, OC_TITLE='Ordenes de compra', ocEdit=null, ocFilter='';
+let OC=[], OC_SEC=null, OC_TITLE='Ordenes de compra', ocEdit=null, ocFilter='', ocSubTab='ocs';
 function ocLoad(){ try{const s=localStorage.getItem(OC_KEY); return s?JSON.parse(s):null;}catch(e){return null;} }
 function ocSave(){ localStorage.setItem(OC_KEY, JSON.stringify(OC)); }
 function ocInit(base, sec, title){
@@ -695,6 +697,44 @@ function ocDownload(i){
   const a=document.createElement('a'); a.href=r.factura; a.download=r.facturaName||'factura.pdf'; a.click();
 }
 function ocSetFilter(v){ ocFilter=v; renderOcInto(); }
+function ocParseCosto(v){ return parseFloat(String(v||'').replace(/[^0-9.,]/g,'').replace(',','.'))||0; }
+function ocMes(fecha){
+  if(!fecha) return null;
+  const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const s=String(fecha).trim();
+  let d;
+  const dmy=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if(dmy) d=new Date(+dmy[3],+dmy[2]-1,+dmy[1]);
+  else { d=new Date(s); }
+  if(!isNaN(d)&&d.getFullYear()>1970) return MESES[d.getMonth()]+' '+d.getFullYear();
+  return null;
+}
+function ocAnalysis(){
+  const byTipo={}, byMes={};
+  for(const r of OC){
+    const t=r.tipo||'Sin tipo', c=ocParseCosto(r.costoTotal), m=ocMes(r.fecha)||'Sin fecha';
+    byTipo[t]=(byTipo[t]||0)+c; byMes[m]=(byMes[m]||0)+c;
+  }
+  return {byTipo, byMes};
+}
+function ocAnalysisHTML(){
+  const {byTipo,byMes}=ocAnalysis();
+  let h='<h3 style="color:#741b47;margin:0 0 10px">Costo total por Tipo</h3><div class="card"><table><thead><tr><th>Tipo</th><th>Costo total</th></tr></thead><tbody>';
+  const tipos=Object.keys(byTipo).sort((a,b)=>byTipo[b]-byTipo[a]);
+  if(!tipos.length) h+='<tr><td colspan="2" class="empty">Sin datos.</td></tr>';
+  const totT=tipos.reduce((s,t)=>s+byTipo[t],0);
+  for(const t of tipos) h+='<tr><td>'+esc(t)+'</td><td>$'+byTipo[t].toLocaleString('es-AR',{minimumFractionDigits:2})+'</td></tr>';
+  if(tipos.length) h+='<tr style="font-weight:600;background:#f8f9fa"><td>Total</td><td>$'+totT.toLocaleString('es-AR',{minimumFractionDigits:2})+'</td></tr>';
+  h+='</tbody></table></div>';
+  h+='<h3 style="color:#741b47;margin:20px 0 10px">Costo total por Mes (fecha de creación)</h3><div class="card"><table><thead><tr><th>Mes</th><th>Costo total</th></tr></thead><tbody>';
+  const meses=Object.keys(byMes);
+  if(!meses.length) h+='<tr><td colspan="2" class="empty">Sin datos.</td></tr>';
+  const totM=meses.reduce((s,m)=>s+byMes[m],0);
+  for(const m of meses) h+='<tr><td>'+esc(m)+'</td><td>$'+byMes[m].toLocaleString('es-AR',{minimumFractionDigits:2})+'</td></tr>';
+  if(meses.length) h+='<tr style="font-weight:600;background:#f8f9fa"><td>Total</td><td>$'+totM.toLocaleString('es-AR',{minimumFractionDigits:2})+'</td></tr>';
+  return h+'</tbody></table></div>';
+}
+function ocSetSubTab(t){ ocSubTab=t; ocEdit=null; renderOcInto(); }
 function ocRows(){ return ocFilter?OC.filter(r=>r.estado===ocFilter):OC; }
 function ocForm(i){
   const r=OC[i];
@@ -704,6 +744,7 @@ function ocForm(i){
     const wide=f.wide?'grid-column:1/-1':'';
     const v=esc(r[f.k]||'');
     if(f.type==='select') h+='<label style="'+wide+'">'+f.label+'<select id="oc-'+f.k+'" class="plan-in">'+OC_ESTADOS.map(s=>'<option'+(r[f.k]===s?' selected':'')+'>'+esc(s)+'</option>').join('')+'</select></label>';
+    else if(f.type==='select-tipo') h+='<label style="'+wide+'">'+f.label+'<select id="oc-'+f.k+'" class="plan-in"><option value="">— Seleccionar —</option>'+OC_TIPOS.map(s=>'<option'+(r[f.k]===s?' selected':'')+'>'+esc(s)+'</option>').join('')+'</select></label>';
     else h+='<label style="'+wide+'">'+f.label+'<input id="oc-'+f.k+'" class="plan-in" value="'+v+'" placeholder="'+(f.ph?esc(f.ph):'')+'"></label>';
   });
   h+='<label style="grid-column:1/-1">Factura PDF<div style="display:flex;gap:8px;align-items:center;margin-top:4px">';
@@ -716,13 +757,20 @@ function ocForm(i){
 function renderOcInto(){
   const sec=OC_SEC; if(!sec) return;
   const rows=ocRows();
-  let h='<h2>'+esc(OC_TITLE)+'</h2><div class="plan-bar"><label>Estado <select onchange="ocSetFilter(this.value)"><option value="">Todos</option>'+OC_ESTADOS.map(s=>'<option'+(ocFilter===s?' selected':'')+'>'+esc(s)+'</option>').join('')+'</select></label><span class="plan-spacer"></span><button class="btn" onclick="ocNew()">+ Nueva OC</button></div>';
+  const stOcs=ocSubTab==='ocs', stAn=ocSubTab==='analisis';
+  let h='<h2>'+esc(OC_TITLE)+'</h2>';
+  h+='<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid #e0e0e0">';
+  h+='<button onclick="ocSetSubTab(\'ocs\')" style="border:none;background:none;padding:9px 18px;font-size:13px;cursor:pointer;border-bottom:'+(stOcs?'3px solid #741b47':'3px solid transparent')+';color:'+(stOcs?'#741b47':'#444')+';font-weight:'+(stOcs?'600':'400')+'">OCs</button>';
+  h+='<button onclick="ocSetSubTab(\'analisis\')" style="border:none;background:none;padding:9px 18px;font-size:13px;cursor:pointer;border-bottom:'+(stAn?'3px solid #741b47':'3px solid transparent')+';color:'+(stAn?'#741b47':'#444')+';font-weight:'+(stAn?'600':'400')+'">Análisis</button>';
+  h+='</div>';
+  if(stAn){ sec.innerHTML=h+ocAnalysisHTML(); return; }
+  h+='<div class="plan-bar"><label>Estado <select onchange="ocSetFilter(this.value)"><option value="">Todos</option>'+OC_ESTADOS.map(s=>'<option'+(ocFilter===s?' selected':'')+'>'+esc(s)+'</option>').join('')+'</select></label><span class="plan-spacer"></span><button class="btn" onclick="ocNew()">+ Nueva OC</button></div>';
   if(ocEdit!==null) h+=ocForm(ocEdit);
-  h+='<div class="card" style="overflow-x:auto"><table><thead><tr><th>Fecha</th><th>Descripción</th><th>Formulario</th><th>Nro OC</th><th>Pos.</th><th>Costo unit.</th><th>Costo total</th><th>Orden Int.</th><th>Responsable</th><th>Estado</th><th>Fecha rec.</th><th>Factura</th><th>Acciones</th></tr></thead><tbody>';
-  if(!rows.length) h+='<tr><td colspan="13" class="empty">Sin \u00f3rdenes de compra.</td></tr>';
+  h+='<div class="card" style="overflow-x:auto"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Descripción</th><th>Formulario</th><th>Nro OC</th><th>Pos.</th><th>Costo unit.</th><th>Costo total</th><th>Orden Int.</th><th>Responsable</th><th>Estado</th><th>Fecha rec.</th><th>Factura</th><th>Acciones</th></tr></thead><tbody>';
+  if(!rows.length) h+='<tr><td colspan="14" class="empty">Sin \u00f3rdenes de compra.</td></tr>';
   for(const r of rows){
     const i=OC.indexOf(r);
-    h+='<tr><td>'+esc(r.fecha)+'</td><td>'+esc(r.descripcion)+'</td><td>'+esc(r.formulario)+'</td><td>'+esc(r.nroOC)+'</td><td>'+esc(r.posiciones)+'</td><td>'+esc(r.costoUnitario)+'</td><td>'+esc(r.costoTotal)+'</td><td>'+esc(r.ordenInterna)+'</td><td>'+esc(r.responsable)+'</td><td>'+ocBadge(r.estado)+'</td><td>'+esc(r.fechaRecepcion)+'</td>';
+    h+='<tr><td>'+esc(r.fecha)+'</td><td>'+esc(r.tipo||'')+'</td><td>'+esc(r.descripcion)+'</td><td>'+esc(r.formulario)+'</td><td>'+esc(r.nroOC)+'</td><td>'+esc(r.posiciones)+'</td><td>'+esc(r.costoUnitario)+'</td><td>'+esc(r.costoTotal)+'</td><td>'+esc(r.ordenInterna)+'</td><td>'+esc(r.responsable)+'</td><td>'+ocBadge(r.estado)+'</td><td>'+esc(r.fechaRecepcion)+'</td>';
     h+='<td>'+(r.factura?'<button class="btn btn-ghost btn-sm" onclick="ocDownload('+i+')">&#8595; '+esc(r.facturaName||'PDF')+'</button>':'<span class="muted">&mdash;</span>')+'</td>';
     h+='<td class="plan-act"><button class="ico" title="Editar" onclick="ocStartEdit('+i+')">&#9998;</button> <button class="ico ico-del" title="Eliminar" onclick="ocDelete('+i+')">&#128465;</button></td></tr>';
   }
