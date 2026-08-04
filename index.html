@@ -102,7 +102,7 @@ const TABS = [
   {id:'mensual', label:'Mensual Operativa', color:'#741b47', file:'data/mensual-operativa.json', type:'mensual'},
   {id:'solucion', label:'Solucion de problemas', color:'#fbbc04', file:'data/solucion-problemas.json', type:'solucion'},
   {id:'onway', label:'On Way', color:'#ff6d01', file:'data/on-way.json', type:'onway'},
-  {id:'estacion', label:'Estacion Errada', color:'#ea4335', file:'data/estacion-errada.json', type:'table'},
+  {id:'estacion', label:'Estacion Errada', color:'#ea4335', file:'data/estacion-errada.json', type:'estacion'},
   {id:'avisos', label:'Avisos de Riesgo', color:'#9c27b0', file:'data/avisos-riesgo.json', type:'avisos'},
 ];
 function badge(v){
@@ -586,6 +586,60 @@ function owInit(base, sec, title){
   const st=owLoad(); OW_META=(st&&st.meta)||{};
   owApplyBase(base); owSave(); renderOwInto();
 }
+const EE_KEY='scz1_estacion';
+let EE=[], EE_SEC=null, EE_TITLE='Estacion Errada';
+function eeLoad(){ try{const s=localStorage.getItem(EE_KEY); return s?JSON.parse(s):null;}catch(e){return null;} }
+function eeSave(){ localStorage.setItem(EE_KEY, JSON.stringify(EE)); }
+function eeInit(base, sec, title){
+  EE_SEC=sec; EE_TITLE=title;
+  const st=eeLoad();
+  if(st) EE=st;
+  else EE=(Array.isArray(base)?base:[]).map(r=>({ id:String(r.ID||r.id||''), svc:String(r.SVC||r.svc||''), fecha:String(r.FECHA||r.fecha||''), resuelto:!!(r.RESUELTO||r.resuelto) }));
+  eeSave(); renderEeInto();
+}
+function eeAdd(){ EE.push({id:'',svc:'',fecha:'',resuelto:false}); eeSave(); renderEeInto(); setTimeout(()=>{ const els=EE_SEC.querySelectorAll('.ee-id'); if(els.length) els[els.length-1].focus(); },0); }
+function eeDelete(i){ EE.splice(i,1); eeSave(); renderEeInto(); }
+function eeSet(i,k,v){ EE[i][k]=v; eeSave(); }
+function eeToggle(i){ EE[i].resuelto=!EE[i].resuelto; eeSave(); renderEeInto(); }
+function eeFmtFecha(f){
+  if(!f) return '';
+  const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const d=new Date(f); if(!isNaN(d)) return d.getDate()+' '+MESES[d.getMonth()];
+  return f;
+}
+function eeWppMsg(){
+  const lineas=EE.filter(r=>!r.resuelto&&r.id&&r.svc&&r.fecha).map(r=>r.id+' - '+r.svc+' - '+eeFmtFecha(r.fecha));
+  if(!lineas.length) return 'Buen dia!! Me ayudan con estos ID cruzados por favor\uD83D\uDE4F\uD83C\uDFFB:\n\n(sin pendientes)';
+  return 'Buen dia!! Me ayudan con estos ID cruzados por favor\uD83D\uDE4F\uD83C\uDFFB:\n\n'+lineas.join('\n');
+}
+function eeCopyWpp(){
+  const msg=eeWppMsg();
+  navigator.clipboard.writeText(msg).then(()=>alert('Mensaje copiado!')).catch(()=>{
+    const ta=document.createElement('textarea'); ta.value=msg; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); alert('Mensaje copiado!');
+  });
+}
+function renderEeInto(){
+  const sec=EE_SEC; if(!sec) return;
+  const pendientes=EE.filter(r=>!r.resuelto&&r.id&&r.svc&&r.fecha);
+  let h='<h2>'+esc(EE_TITLE)+'</h2>';
+  h+='<div class="plan-bar"><button class="btn" onclick="eeAdd()">+ Agregar ID</button></div>';
+  h+='<div class="card"><table><thead><tr><th>ID</th><th>SVC</th><th>Fecha</th><th>Resuelto</th><th></th></tr></thead><tbody>';
+  if(!EE.length) h+='<tr><td colspan="5" class="empty">Sin registros. Agre\u0261\u0101 un ID.</td></tr>';
+  for(let i=0;i<EE.length;i++){
+    const r=EE[i];
+    h+='<tr'+(r.resuelto?' style="opacity:.5"':'')+'>'; 
+    h+='<td><input class="plan-in ee-id" value="'+esc(r.id)+'" placeholder="ID" onchange="eeSet('+i+',\'id\',this.value)"></td>';
+    h+='<td><input class="plan-in" value="'+esc(r.svc)+'" placeholder="SVC" onchange="eeSet('+i+',\'svc\',this.value)" style="max-width:90px"></td>';
+    h+='<td><input class="plan-in" value="'+esc(r.fecha)+'" placeholder="dd mmm / yyyy-mm-dd" onchange="eeSet('+i+',\'fecha\',this.value)" style="max-width:130px"></td>';
+    h+='<td style="text-align:center"><span class="chk'+(r.resuelto?' on':'')+'" onclick="eeToggle('+i+')">'+(r.resuelto?'&#10003;':'')+'</span></td>';
+    h+='<td><button class="ico ico-del" onclick="eeDelete('+i+')" title="Eliminar">&times;</button></td></tr>';
+  }
+  h+='</tbody></table></div>';
+  h+='<h3 style="color:#741b47;margin:20px 0 8px">Mensaje para WPP <span style="font-size:12px;font-weight:400;color:#5f6368">('+pendientes.length+' pendientes)</span></h3>';
+  h+='<div class="moki" style="font-family:monospace;font-size:13px;white-space:pre-wrap;user-select:all">'+esc(eeWppMsg())+'</div>';
+  h+='<div style="margin-top:8px"><button class="btn" onclick="eeCopyWpp()">Copiar mensaje</button></div>';
+  sec.innerHTML=h;
+}
 async function load(tab){
   const main=document.getElementById('main');
   let sec=document.getElementById('sec-'+tab.id);
@@ -603,6 +657,7 @@ async function load(tab){
     else if(tab.type==='mensual'){ menInit(data, sec, tab.label); }
     else if(tab.type==='solucion'){ spInit(data, sec, tab.label); }
     else if(tab.type==='onway'){ owInit(data, sec, tab.label); }
+    else if(tab.type==='estacion'){ eeInit(data, sec, tab.label); }
     else {
       let body='';
       if(tab.type==='avisos') body=renderAvisos(data);
