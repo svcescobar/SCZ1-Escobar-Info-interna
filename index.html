@@ -653,7 +653,7 @@ const OC_KEY='scz1_oc';
 const OC_TIPOS=['Pago Alquiler','Pago Expensas','Pago Boss','Compra Bioseif','Compra Ofidirect','Compra Marken','Otros'];
 const OC_ESTADOS=['Creada','En Aprobación','Contrato Marco','Pendiente de Recepción','Recepcionada','Recepcionada Parcial','Cancelada-Eliminada'];
 const OC_FIELDS=[
-  {k:'fecha',label:'Fecha de creación',type:'text',ph:'dd/mm/aaaa'},
+  {k:'fecha',label:'Fecha de creación',type:'date'},
   {k:'tipo',label:'Tipo',type:'select-tipo'},
   {k:'descripcion',label:'Descripción de la OC',type:'text',ph:'Descripción',wide:true},
   {k:'formulario',label:'Formulario',type:'text',ph:'Nro formulario'},
@@ -661,10 +661,10 @@ const OC_FIELDS=[
   {k:'posiciones',label:'Posiciones',type:'text',ph:'Cant.'},
   {k:'costoUnitario',label:'Costo unitario',type:'text',ph:'$0'},
   {k:'costoTotal',label:'Costo total',type:'text',ph:'$0'},
-  {k:'ordenInterna',label:'Orden Interna',type:'text',ph:'SBU1'},
+  {k:'ordenInterna',label:'Orden Interna',type:'fixed',value:'0I_SCZ1'},
   {k:'responsable',label:'Responsable',type:'text',ph:'Nombre'},
   {k:'estado',label:'Estado',type:'select'},
-  {k:'fechaRecepcion',label:'Fecha recepción',type:'text',ph:'dd/mm/aaaa'},
+  {k:'fechaRecepcion',label:'Fecha recepción',type:'date'},
   {k:'factura',label:'Archivo factura',type:'file'}
 ];
 let OC=[], OC_SEC=null, OC_TITLE='Ordenes de compra', ocEdit=null, ocFilter='', ocSubTab='ocs';
@@ -677,18 +677,25 @@ function ocInit(base, sec, title){
   else { OC=(Array.isArray(base)?base:[]).map(r=>{ const o={factura:'',facturaName:''}; OC_FIELDS.forEach(f=>o[f.k]=String(r[f.k]||r[f.label]||'')); return o; }); }
   ocEdit=null; ocFilter=''; ocSave(); renderOcInto();
 }
-function ocNew(){ const o={factura:'',facturaName:''}; OC_FIELDS.forEach(f=>o[f.k]=''); OC.push(o); ocEdit=OC.length-1; ocSave(); renderOcInto(); }
+function ocNew(){ const o={factura:'',facturaName:''}; OC_FIELDS.forEach(f=>o[f.k]=f.type==='fixed'?f.value:''); OC.push(o); ocEdit=OC.length-1; ocSave(); renderOcInto(); }
 function ocStartEdit(i){ ocEdit=i; renderOcInto(); }
 function ocCancel(){ if(ocEdit!==null&&OC[ocEdit]&&!OC[ocEdit].descripcion&&!OC[ocEdit].nroOC) OC.splice(ocEdit,1); ocEdit=null; ocSave(); renderOcInto(); }
 function ocSaveForm(){
   const g=id=>{ const el=OC_SEC.querySelector('#oc-'+id); return el?el.value:''; };
   const r=OC[ocEdit]; if(!r) return;
-  OC_FIELDS.filter(f=>f.type!=='file').forEach(f=>r[f.k]=g(f.k));
+  OC_FIELDS.filter(f=>f.type!=='file'&&f.type!=='fixed').forEach(f=>r[f.k]=g(f.k));
+  OC_FIELDS.filter(f=>f.type==='fixed').forEach(f=>r[f.k]=f.value);
   ocEdit=null; ocSave(); renderOcInto();
 }
 function ocDelete(i){ if(!confirm('Eliminar esta OC?')) return; OC.splice(i,1); ocEdit=null; ocSave(); renderOcInto(); }
 function ocAttach(i, input){
   const f=input.files[0]; if(!f) return;
+  // guardar el form actual antes de re-render
+  const g=id=>{ const el=OC_SEC.querySelector('#oc-'+id); return el?el.value:''; };
+  const r=OC[i]; if(r){
+    OC_FIELDS.filter(f=>f.type!=='file').forEach(f=>r[f.k]=g(f.k));
+    ocSave();
+  }
   const rd=new FileReader();
   rd.onload=()=>{ OC[i].factura=rd.result; OC[i].facturaName=f.name; ocSave(); renderOcInto(); };
   rd.readAsDataURL(f);
@@ -767,6 +774,8 @@ function ocForm(i){
     const v=esc(r[f.k]||'');
     if(f.type==='select') h+='<label style="'+wide+'">'+f.label+'<select id="oc-'+f.k+'" class="plan-in">'+OC_ESTADOS.map(s=>'<option'+(r[f.k]===s?' selected':'')+'>'+esc(s)+'</option>').join('')+'</select></label>';
     else if(f.type==='select-tipo') h+='<label style="'+wide+'">'+f.label+'<select id="oc-'+f.k+'" class="plan-in"><option value="">— Seleccionar —</option>'+OC_TIPOS.map(s=>'<option'+(r[f.k]===s?' selected':'')+'>'+esc(s)+'</option>').join('')+'</select></label>';
+    else if(f.type==='date') h+='<label style="'+wide+'">'+f.label+'<input id="oc-'+f.k+'" type="date" class="plan-in" value="'+v+'"></label>';
+    else if(f.type==='fixed') h+='<label style="'+wide+'">'+f.label+'<input class="plan-in" value="'+esc(f.value)+'" disabled style="background:#f1f3f4;color:#5f6368"></label>';
     else h+='<label style="'+wide+'">'+f.label+'<input id="oc-'+f.k+'" class="plan-in" value="'+v+'" placeholder="'+(f.ph?esc(f.ph):'')+'"></label>';
   });
   h+='<label style="grid-column:1/-1">Factura PDF<div style="display:flex;gap:8px;align-items:center;margin-top:4px">';
